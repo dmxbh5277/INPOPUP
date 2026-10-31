@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Anton&family=Barlow+Condensed:wght@600;800&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
 :root{--bg:#f2f4f8;--card:#fff;--text:#1b2433;--muted:#6b7686;--line:#e1e6ee;--pri:#1a5fd6;--pri2:#e8f0fe;--ok:#14915a;--warn:#d9480f;--warnbg:#fff4ec;--sel:#e67700}
 *{box-sizing:border-box}
@@ -166,7 +167,7 @@ details summary{cursor:pointer;font-weight:600;color:var(--pri)}
     <h3>📦 Dữ liệu sản phẩm (tab DATA)</h3>
     <div id="dataInfo" class="hint" style="margin:0 0 8px"></div>
     <div style="max-height:260px;overflow:auto"><table class="dt" id="dataTable"></table></div>
-    <p class="hint">Dán dữ liệu vào tab <b>DATA</b> của Google Sheet (4 cột: Mã SP, Tên SP, Giá Niêm Yết, Giá Khuyến Mãi), rồi bấm <b>Tải lại dữ liệu</b>.</p>
+    <p class="hint">Dán dữ liệu vào tab <b>DATA</b> của Google Sheet (4 cột: Mã SP, Tên SP, Giá Niêm Yết, Giá Khuyến Mãi), rồi bấm <b>Tải lại dữ liệu</b>. Giá nhập số đầy đủ, VD <b>19990000</b>.</p>
   </div>
 
   <div class="card" id="tplListCard">
@@ -184,6 +185,7 @@ details summary{cursor:pointer;font-weight:600;color:var(--pri)}
         <div><label class="lb">Rộng (cm)</label><input type="number" id="edW" step="0.1" min="1"></div>
         <div><label class="lb">Cao (cm)</label><input type="number" id="edH" step="0.1" min="1"></div>
       </div>
+      <p class="hint" id="edRes"></p>
       <button class="btn" id="btnEdImg" style="margin-top:8px">🔄 Đổi ảnh nền</button>
     </div>
     <div class="cols2">
@@ -219,6 +221,8 @@ details summary{cursor:pointer;font-weight:600;color:var(--pri)}
       <div><label class="lb">Lề giấy (mm)</label><input type="number" id="sMargin" min="0" step="1"></div>
       <div><label class="lb">Khoảng cách sticker (mm)</label><input type="number" id="sGap" min="0" step="1"></div>
     </div>
+    <label class="lb" style="margin-top:10px">Độ nét khi in (chữ, số, QR)</label>
+    <select id="sDpi"><option value="300">Chuẩn – 300 dpi (file nhẹ)</option><option value="400">Nét – 400 dpi (khuyên dùng)</option><option value="600">Rất nét – 600 dpi (file nặng)</option></select>
     <label class="chk" style="margin-top:10px"><input type="checkbox" id="sCut"> Viền mờ để cắt</label>
     <button class="btn pri" id="btnSaveSet" style="margin-top:10px">Lưu cài đặt</button>
   </div>
@@ -253,7 +257,7 @@ const $=s=>document.querySelector(s);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const noAcc=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase().trim();
-const toNum=v=>{if(typeof v==='number')return Math.round(v);const d=String(v??'').replace(/[^\d]/g,'');return d?+d:0};
+const toNum=v=>{if(typeof v==='number')return Math.round(v);const d=String(v??'').trim().replace(/[.,]\d{1,2}$/,'').replace(/[^\d]/g,'');return d?+d:0};
 const fmt=n=>n?Math.round(n).toLocaleString('vi-VN'):'';
 function fmtN(n,m){if(!n)return '';switch(m){case 'fullc':return Math.round(n).toLocaleString('en-US');case 'k':return Math.round(n/1000).toLocaleString('en-US');case 'kdot':return Math.round(n/1000).toLocaleString('vi-VN');default:return Math.round(n).toLocaleString('vi-VN')}}
 function calcPct(it){const ny=toNum(it.ny),km=toNum(it.km);return ny>0&&km>0&&km<ny?Math.round((ny-km)/ny*100):0}
@@ -263,7 +267,7 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const isAndroid=/Android/i.test(navigator.userAgent);
 
 /* ---------- cấu hình trường ---------- */
-const SRC=[['name','Tên SP'],['code','Mã SP'],['ny','Giá niêm yết'],['km','Giá khuyến mãi'],['pct','% giảm (tự tính)'],['save','Số tiền giảm (tự tính)'],['date','Ngày áp dụng'],['text','Chữ cố định']];
+const SRC=[['name','Tên SP'],['code','Mã SP'],['ny','Giá niêm yết'],['km','Giá khuyến mãi'],['pct','% giảm (tự tính)'],['save','Số tiền giảm (tự tính)'],['date','Ngày áp dụng'],['text','Chữ cố định'],['qr','Mã QR (từ Mã SP)']];
 const SRCL=Object.fromEntries(SRC);const NUMSRC=['ny','km','save'];
 const FONTS={'Be Vietnam Pro':[500,800],'Anton':[400,400],'Barlow Condensed':[600,800],'Oswald':[500,700],'Arial':[400,700]};
 const FDEF={on:true,color:'#111111',bold:false,align:'center',lines:1,strike:false,underline:false,prefix:'',suffix:'',font:'Be Vietnam Pro',num:'full',text:'',fit:'auto',scale:100};
@@ -282,7 +286,7 @@ const SAMPLE={code:'SP001',name:'Tủ lạnh Samsung Inverter 236 lít RT22M4032
 const PAPERS={A4:[210,297],A5:[148,210]};
 
 /* ---------- trạng thái & lưu trữ ---------- */
-const ST={api:'',products:[],templates:[],fonts:[],settings:{margin:0,gap:0,cut:true},sheetUrl:'',cart:[],picked:null,opts:{tpl:null,paper:'A4',date:''},loadedAt:0};
+const ST={api:'',products:[],templates:[],fonts:[],settings:{margin:0,gap:0,cut:true,dpi:400},sheetUrl:'',cart:[],picked:null,opts:{tpl:null,paper:'A4',date:''},loadedAt:0};
 const IDB={db:null,
   open(){return new Promise((res,rej)=>{const r=indexedDB.open('stickerDMX2',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)})},
   get(k){return new Promise(res=>{try{const t=this.db.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>res(undefined)}catch(e){res(undefined)}})},
@@ -322,7 +326,7 @@ async function getTplImage(t){if(!t.imgId)return null;const key='img_'+t.imgId;c
   try{const j=await apiGet({action:'img',id:t.imgId});await IDB.set(key,j.data);return j.data}catch(e){return null}}
 function applyData(products,templates,settings,sheetUrl){
   ST.products=products||[];ST.templates=(templates||[]).map(fixTpl);
-  const s=settings||{};ST.settings={margin:Math.max(0,+(s.margin??0)||0),gap:Math.max(0,+(s.gap??0)||0),cut:String(s.cut??'true').toLowerCase()!=='false'};
+  const s=settings||{};ST.settings={margin:Math.max(0,+(s.margin??0)||0),gap:Math.max(0,+(s.gap??0)||0),cut:String(s.cut??'true').toLowerCase()!=='false',dpi:[300,400,600].includes(+s.dpi)?+s.dpi:400};
   ST.sheetUrl=sheetUrl||'';if(!ST.templates.find(t=>t.id===ST.opts.tpl))ST.opts.tpl=ST.templates[0]?.id||null}
 async function loadCache(){const c=await IDB.get('cache');if(!c)return false;const tpls=[];await loadFonts(c.fonts);
   for(const t of c.templates||[]){t.img=await IDB.get('img_'+t.imgId);if(t.img)tpls.push(t)}
@@ -388,7 +392,12 @@ async function closeScan(){$('#scanModal').hidden=true;$('#pickedHome').appendCh
 /* ---------- danh sách in ---------- */
 const tplById=id=>ST.templates.find(t=>t.id===id);
 const tplOf=it=>tplById(it.tpl)||tplById(ST.opts.tpl)||ST.templates[0];
-function itemWarn(it){const ny=toNum(it.ny),km=toNum(it.km);if(!it.name)return 'Thiếu tên SP';if(!km&&!ny)return 'Thiếu giá';if(ny&&km&&km>=ny)return 'Giá KM ≥ giá niêm yết';return ''}
+function itemIssue(it){const ny=toNum(it.ny),km=toNum(it.km);
+  if(!it.name)return {lv:'err',msg:'Thiếu tên SP'};if(!km&&!ny)return {lv:'err',msg:'Thiếu cả 2 giá'};if(!km)return {lv:'err',msg:'Thiếu giá KM'};
+  if(km>ny&&ny)return {lv:'err',msg:'Giá KM lớn hơn giá NY'};if(!ny)return {lv:'note',msg:'Thiếu giá NY (không hiện giá gạch, % giảm)'};
+  if(km===ny)return {lv:'note',msg:'Không giảm giá (KM = NY)'};return null}
+function itemWarn(it){const x=itemIssue(it);return x&&x.lv==='err'?x.msg:''}
+function itemNote(it){const x=itemIssue(it);return x&&x.lv==='note'?x.msg:''}
 function renderCart(){const box=$('#cart');
   if(!ST.cart.length){box.innerHTML='<div class="empty">Chưa có sản phẩm. Tìm hoặc quét mã để thêm.</div>';updateCounts();return}
   const topt=cur=>`<option value="">Mẫu chung</option>`+ST.templates.map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${esc(t.name)}</option>`).join('');
@@ -398,7 +407,7 @@ function renderCart(){const box=$('#cart');
       <span>KM</span><input type="text" inputmode="numeric" data-k="km" value="${fmt(it.km)}">${p?`<span class="pct">-${p}%</span>`:''}</div>
     <div class="row sm"><select data-k="tpl">${topt(it.tpl)}</select>
       <div class="qty"><button data-act="minus">−</button><input type="number" inputmode="numeric" data-k="qty" value="${it.qty||1}" min="1"><button data-act="plus">+</button></div></div>
-    ${w?`<div class="wmsg">⚠ ${w}</div>`:''}</div>`}).join('');updateCounts()}
+    ${w?`<div class="wmsg">⚠ ${w}</div>`:(itemNote(it)?`<div class="wmsg" style="color:var(--muted)">ℹ ${itemNote(it)}</div>`:'')}</div>`}).join('');updateCounts()}
 function updateCounts(){const n=ST.cart.reduce((s,i)=>s+(+i.qty||1),0);$('#listInfo').textContent=`(${ST.cart.length} SP • ${n} sticker)`;$('#hdCount').textContent=`${n} sticker`;updateLayoutInfo()}
 
 /* ---------- thư viện mẫu ---------- */
@@ -442,9 +451,14 @@ function drawField(ctx,c,text,W,H){const bx=c.x*W,by=c.y*H,bw=c.w*W,bh=c.h*H,L=+
   if(!lines)lines=[text];size*=k;setF(size);ctx.textBaseline='alphabetic';const {asc,desc}=inkRef(ctx,text);
   let base=by+(bh-lines.length*size*LH)/2+(size*LH-(asc+desc))/2+asc;
   for(const ln of lines){const tw=ctx.measureText(ln).width,x=al==='center'?bx+(bw-tw)/2:al==='right'?bx+bw-tw:bx;ctx.fillText(ln,x,base);deco(x,base,tw,asc,desc,size);base+=size*LH}}
+function drawQR(ctx,c,code,W,H){if(!code||!window.qrcode)return;let q;try{q=qrcode(0,'M');q.addData(String(code));q.make()}catch(e){return}
+  const bx=c.x*W,by=c.y*H,bw=c.w*W,bh=c.h*H,k=Math.max(.3,Math.min(3,(+c.scale||100)/100)),s=Math.min(bw,bh)*k;
+  const x=c.align==='left'?bx:c.align==='right'?bx+bw-s:bx+(bw-s)/2,y=by+(bh-s)/2,n=q.getModuleCount(),qz=2,cell=s/(n+qz*2);
+  ctx.fillStyle='#fff';ctx.fillRect(x,y,s,s);ctx.fillStyle=c.color||'#000';
+  for(let r=0;r<n;r++)for(let cc=0;cc<n;cc++)if(q.isDark(r,cc)){const x0=Math.floor(x+(cc+qz)*cell),y0=Math.floor(y+(r+qz)*cell);ctx.fillRect(x0,y0,Math.ceil(x+(cc+qz+1)*cell)-x0,Math.ceil(y+(r+qz+1)*cell)-y0)}}
+function renderFields(ctx,t,it,W,H){Object.values(t.fields).forEach(c=>{if(!c.on)return;if(c.src==='qr')return drawQR(ctx,c,it.code,W,H);const tx=fieldText(c,it);if(tx)drawField(ctx,c,tx,W,H)})}
 function renderSticker(t,it,pxW,cv,img){const W=pxW,H=Math.round(pxW*t.ih/t.iw);cv.width=W;cv.height=H;const ctx=cv.getContext('2d');
-  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.drawImage(img,0,0,W,H);
-  Object.values(t.fields).forEach(c=>{if(!c.on)return;const tx=fieldText(c,it);if(tx)drawField(ctx,c,tx,W,H)})}
+  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.drawImage(img,0,0,W,H);renderFields(ctx,t,it,W,H)}
 
 /* ---------- xếp sticker lên giấy (xếp lẫn nhiều kích thước) ---------- */
 function orientOpts(it,pref){const o=[[it.w,it.h,false],[it.h,it.w,true]];o.sort((a,b)=>pref==='wide'?(b[0]-b[1])-(a[0]-a[1]):(a[0]-a[1])-(b[0]-b[1]));return o}
@@ -488,13 +502,17 @@ async function generate(){if(!ST.cart.length)return toast('Danh sách in đang t
   $('#btnGen').disabled=true;$('#outBox').hidden=true;$('#genBox').hidden=false;
   try{const P=pack(buildList());const orient=P.pw>P.ph?'landscape':'portrait',fp=ST.opts.paper.toLowerCase();
     const doc=new window.jspdf.jsPDF({orientation:orient,unit:'mm',format:fp,compress:true});
-    const cv=document.createElement('canvas'),rc=document.createElement('canvas');let last={key:'',data:''},done=0;const total=P.pages.reduce((s,p)=>s+p.items.length,0);
+    const dpi=ST.settings.dpi||400,cv=document.createElement('canvas'),rc=document.createElement('canvas');let done=0;const total=P.pages.reduce((s,p)=>s+p.items.length,0);
+    const rotIf=(src,rot)=>{if(!rot)return src;rc.width=src.height;rc.height=src.width;const rx=rc.getContext('2d');rx.setTransform(1,0,0,1,0,0);rx.clearRect(0,0,rc.width,rc.height);rx.translate(rc.width,0);rx.rotate(Math.PI/2);rx.drawImage(src,0,0);return rc};
+    const bgDone={};let txt={};
     for(let pi=0;pi<P.pages.length;pi++){if(pi>0)doc.addPage(fp,orient);
-      for(const pl of P.pages[pi].items){const it=ST.cart[pl.ref],t=tplOf(it);const key=pl.ref+'_'+t.id+(pl.rot?'r':'');
-        if(last.key!==key){await fontsReady(t);renderSticker(t,it,Math.round(t.wcm/2.54*200),cv,await getImg(t));let src=cv;
-          if(pl.rot){rc.width=cv.height;rc.height=cv.width;const rx=rc.getContext('2d');rx.setTransform(1,0,0,1,0,0);rx.translate(rc.width,0);rx.rotate(Math.PI/2);rx.drawImage(cv,0,0);src=rc}
-          last={key,data:src.toDataURL('image/jpeg',.9)}}
-        doc.addImage(last.data,'JPEG',pl.x,pl.y,pl.w,pl.h,'s'+key,'FAST');
+      for(const pl of P.pages[pi].items){const it=ST.cart[pl.ref],t=tplOf(it),r=pl.rot?'r':'';const bk='b'+t.id+r,tk='t'+pl.ref+'_'+t.id+r;
+        if(!bgDone[bk]){const img=await getImg(t);cv.width=img.naturalWidth;cv.height=img.naturalHeight;const x=cv.getContext('2d');x.setTransform(1,0,0,1,0,0);x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(img,0,0);
+          bgDone[bk]=rotIf(cv,pl.rot).toDataURL('image/jpeg',.95)}
+        doc.addImage(bgDone[bk],'JPEG',pl.x,pl.y,pl.w,pl.h,bk,'FAST');
+        if(!txt[tk]){await fontsReady(t);const W=Math.round(t.wcm/2.54*dpi),H=Math.round(W*t.ih/t.iw);cv.width=W;cv.height=H;const x=cv.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,W,H);
+          renderFields(x,t,it,W,H);txt={};txt[tk]=rotIf(cv,pl.rot).toDataURL('image/png')}
+        doc.addImage(txt[tk],'PNG',pl.x,pl.y,pl.w,pl.h,tk,'FAST');
         if(ST.settings.cut){doc.setDrawColor(190);doc.setLineWidth(.1);doc.rect(pl.x,pl.y,pl.w,pl.h)}
         done++;$('#barI').style.width=(done/total*100)+'%';$('#genMsg').textContent=`Đang tạo ${done}/${total}...`;if(done%3===0)await sleep(0)}}
     const blob=doc.output('blob');const d=new Date(),pad=n=>String(n).padStart(2,'0');
@@ -517,20 +535,26 @@ function renderAdmin(){
   $('#apiUrl').value=ST.api||'';$('#apiBox').hidden=!!API_URL;
   const l=$('#lnkSheet');l.hidden=!ST.sheetUrl;if(ST.sheetUrl)l.href=ST.sheetUrl;
   const P=ST.products,w=P.filter(itemWarn).length,dup=P.filter(p=>p.code).length-new Set(P.filter(p=>p.code).map(p=>noAcc(p.code))).size;
-  $('#dataInfo').innerHTML=`<b>${P.length}</b> sản phẩm`+(w?` • <span style="color:var(--warn)">⚠ ${w} dòng lỗi giá</span>`:'')+(dup?` • <span style="color:var(--warn)">⚠ ${dup} mã trùng</span>`:'');
-  $('#dataTable').innerHTML=P.length?'<tr><th>Mã</th><th>Tên SP</th><th>NY</th><th>KM</th><th>%</th></tr>'+P.slice(0,200).map(p=>`<tr ${itemWarn(p)?'style="background:var(--warnbg)"':''}><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td class="n">${fmt(p.ny)}</td><td class="n">${fmt(p.km)}</td><td class="n">${calcPct(p)||''}</td></tr>`).join(''):'';
-  renderFontList();$('#sMargin').value=ST.settings.margin;$('#sGap').value=ST.settings.gap;$('#sCut').checked=ST.settings.cut;renderTplList()}
+  const cnt={};P.forEach(p=>{const x=itemIssue(p);if(x)cnt[x.msg]=(cnt[x.msg]||0)+1});
+  const codes={};P.forEach(p=>{if(p.code){const k=noAcc(p.code);codes[k]=(codes[k]||0)+1}});
+  $('#dataInfo').innerHTML=`<b>${P.length}</b> sản phẩm`+(dup?` • <span style="color:var(--warn)">⚠ ${dup} mã trùng</span>`:'')+
+    (Object.keys(cnt).length?'<br>'+Object.entries(cnt).map(([m,n])=>`<span style="color:${/Không giảm|Thiếu giá NY/.test(m)?'var(--muted)':'var(--warn)'}">${/Không giảm|Thiếu giá NY/.test(m)?'ℹ':'⚠'} ${m}: <b>${n}</b></span>`).join(' • '):'')+
+    `<br><label class="chk" style="margin-top:6px"><input type="checkbox" id="onlyIssue" ${onlyIssue?'checked':''}> Chỉ hiện dòng có vấn đề</label>`;
+  const rowsP=(onlyIssue?P.filter(p=>itemIssue(p)||(p.code&&codes[noAcc(p.code)]>1)):P).slice(0,500);
+  $('#dataTable').innerHTML=P.length?'<tr><th>Mã</th><th>Tên SP</th><th>NY</th><th>KM</th><th>%</th><th>Vấn đề</th></tr>'+rowsP.map(p=>{const x=itemIssue(p),d=p.code&&codes[noAcc(p.code)]>1;
+    return `<tr ${x&&x.lv==='err'||d?'style="background:var(--warnbg)"':''}><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td class="n">${fmt(p.ny)}</td><td class="n">${fmt(p.km)}</td><td class="n">${calcPct(p)||''}</td><td style="color:${x&&x.lv==='err'||d?'var(--warn)':'var(--muted)'}">${[x?x.msg:'',d?'Mã trùng':''].filter(Boolean).join(', ')}</td></tr>`}).join(''):'';
+  $('#sDpi').value=ST.settings.dpi;renderFontList();$('#sMargin').value=ST.settings.margin;$('#sGap').value=ST.settings.gap;$('#sCut').checked=ST.settings.cut;renderTplList()}
 function renderFontList(){const box=$('#fontList');
   box.innerHTML=ST.fonts.length?ST.fonts.map(f=>`<div class="tl" data-name="${esc(f.name)}"><div class="grow" style="font-family:'${esc(f.name)}';font-size:22px">${esc(f.name)} – Giảm 12,990 Áp dụng</div><button class="btn red" data-act="delfont">Xóa</button></div>`).join(''):'<div class="hint" style="margin:0">Chưa có font riêng.</div>'}
-let tlJob=0;
+let tlJob=0,onlyIssue=false;
 async function renderTplList(){const box=$('#tplList'),job=++tlJob;
   if(!ST.templates.length){box.innerHTML='<div class="empty">Chưa có mẫu nào.</div>';return}
   box.innerHTML=ST.templates.map(t=>`<div class="tl" data-id="${t.id}"><canvas></canvas><div class="grow"><b>${esc(t.name)}</b><div class="hint" style="margin:0">${t.wcm}×${t.hcm} cm</div></div><button class="btn" data-act="edit">Sửa</button><button class="btn red" data-act="del">Xóa</button></div>`).join('');
   const it=previewItem();for(const el of box.querySelectorAll('.tl')){if(job!==tlJob)return;const t=tplById(el.dataset.id);try{await fontsReady(t);renderSticker(t,it,300,el.querySelector('canvas'),await getImg(t))}catch(e){}}}
 async function prepImage(file){const url0=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(file)});
-  const img=await loadImg(url0);let w=img.naturalWidth,h=img.naturalHeight,url=url0;const max=2400;
-  if(Math.max(w,h)>max||file.size>1.5e6){const k=Math.min(1,max/Math.max(w,h));const c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
-    const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);url=c.toDataURL('image/jpeg',.92);w=c.width;h=c.height}
+  const img=await loadImg(url0);let w=img.naturalWidth,h=img.naturalHeight,url=url0;const max=4000;
+  if(Math.max(w,h)>max||file.size>6e6){const k=Math.min(1,max/Math.max(w,h));const c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+    const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);url=c.toDataURL('image/jpeg',.95);w=c.width;h=c.height}
   return {url,w,h}}
 let fileMode='new';
 async function onTplFile(file){if(!file)return;const {url,w,h}=await prepImage(file);
@@ -539,9 +563,10 @@ async function onTplFile(file){if(!file)return;const {url,w,h}=await prepImage(f
   else{draft.img=url;draft.iw=w;draft.ih=h;draft.hcm=Math.round(draft.wcm*h/w*10)/10;draft._img=true;$('#edH').value=draft.hcm;$('#stageImg').src=url;markDirty();renderPreview()}}
 function openEditor(t){if(draft&&dirty&&!confirm('Mẫu đang sửa chưa lưu. Bỏ thay đổi?'))return;draft=JSON.parse(JSON.stringify(t));fixTpl(draft);dirty=false;selField=Object.keys(draft.fields)[0]||'';
   $('#editor').hidden=false;$('#tplListCard').hidden=true;$('#edName').value=draft.name;$('#edW').value=draft.wcm;$('#edH').value=draft.hcm;$('#stageImg').src=draft.img;
-  renderBoxes();renderFieldPanel();renderPreview();$('#edState').textContent='';$('#editor').scrollIntoView({behavior:'smooth'})}
+  renderBoxes();renderFieldPanel();renderPreview();showRes();$('#edState').textContent='';$('#editor').scrollIntoView({behavior:'smooth'})}
 function closeEditor(){if(dirty&&!confirm('Mẫu chưa lưu. Đóng và bỏ thay đổi?'))return;draft=null;dirty=false;$('#editor').hidden=true;$('#tplListCard').hidden=false}
-function markDirty(){dirty=true;$('#edState').textContent='● Có thay đổi chưa lưu'}
+function showRes(){if(!draft)return;const d=Math.round(draft.iw/(draft.wcm/2.54));$('#edRes').innerHTML=`Ảnh nền: ${draft.iw}×${draft.ih} px ≈ <b>${d} dpi</b>`+(d<250?' – <span style="color:var(--warn)">⚠ hơi thấp, nền in sẽ mờ. Trong Canva tải xuống PNG, kéo <b>Kích thước</b> lên ×2 hoặc ×3.</span>':' ✓')}
+function markDirty(){showRes();dirty=true;$('#edState').textContent='● Có thay đổi chưa lưu'}
 function renderBoxes(){const st=$('#stage');st.querySelectorAll('.box').forEach(b=>b.remove());if(!draft)return;
   Object.entries(draft.fields).forEach(([k,c])=>{if(!c.on&&k!==selField)return;const d=document.createElement('div');d.className='box'+(k===selField?' sel':'');d.dataset.k=k;
     d.style.cssText=`left:${c.x*100}%;top:${c.y*100}%;width:${c.w*100}%;height:${c.h*100}%`;d.innerHTML=`${esc(c.label)}<span class="h"></span>`;st.appendChild(d)})}
@@ -553,6 +578,10 @@ function renderFieldPanel(){if(!draft)return;if(!draft.fields[selField])selField
    <div class="row"><label class="chk"><input type="checkbox" data-p="on" ${c.on?'checked':''}> Hiện</label><input type="text" data-p="label" class="grow" value="${esc(c.label)}" placeholder="Tên trường"></div>
    <div class="row"><label class="lb">Liên kết cột</label><select data-p="src" class="grow">${SRC.map(([v,l])=>opt(v,l,c.src)).join('')}</select></div>
    ${c.src==='text'?`<div class="row"><label class="lb">Nội dung</label><input type="text" class="grow" data-p="text" value="${esc(c.text)}"></div>`:''}
+   ${c.src==='qr'?`<div class="row"><label class="lb">Màu / Căn</label><input type="color" data-p="color" value="${c.color||'#000000'}"><select data-p="align">${[['left','Trái'],['center','Giữa'],['right','Phải']].map(([v,l])=>opt(v,l,c.align)).join('')}</select></div>
+   <div class="row"><label class="lb">Kích thước</label><input type="range" data-p="scale" min="50" max="100" step="5" value="${Math.min(100,c.scale||100)}" class="grow"><b id="scaleVal" style="min-width:44px;text-align:right">${Math.min(100,c.scale||100)}%</b></div>
+   <p class="hint" style="margin:0">QR tạo từ Mã SP, luôn vuông theo cạnh ngắn của khung. Nên để QR rộng từ 1,5 cm trở lên để dễ quét.</p>
+   <button class="btn red" data-act="delfield">Xóa trường này</button></div>`:`
    <div class="row"><label class="lb">Font</label><select data-p="font" class="grow">${Object.keys(FONTS).map(f=>opt(f,f,c.font)).join('')}</select><button class="mini ${c.bold?'on':''}" data-p="bold">B</button><input type="color" data-p="color" value="${c.color||'#000000'}"></div>
    <div class="row"><label class="lb">Căn chữ</label><select data-p="align">${[['left','Trái'],['center','Giữa'],['right','Phải']].map(([v,l])=>opt(v,l,c.align)).join('')}</select><select data-p="lines">${[1,2,3].map(n=>opt(n,n+' dòng',c.lines)).join('')}</select></div>
    <div class="row"><label class="lb">Cỡ chữ</label><input type="range" data-p="scale" min="50" max="200" step="5" value="${c.scale||100}" class="grow"><b id="scaleVal" style="min-width:44px;text-align:right">${c.scale||100}%</b></div>
@@ -560,7 +589,7 @@ function renderFieldPanel(){if(!draft)return;if(!draft.fields[selField])selField
    ${isNum?`<div class="row"><label class="lb">Định dạng số</label><select data-p="num" class="grow">${[['full','21.990.000'],['fullc','21,990,000'],['k','21,990 (nghìn)'],['kdot','21.990 (nghìn)']].map(([v,l])=>opt(v,l,c.num)).join('')}</select></div>`:''}
    <div class="row"><label class="chk"><input type="checkbox" data-p="strike" ${c.strike?'checked':''}> Gạch ngang</label><label class="chk"><input type="checkbox" data-p="underline" ${c.underline?'checked':''}> Gạch dưới</label></div>
    <div class="row"><input type="text" class="grow" data-p="prefix" placeholder="Chữ trước (VD: Giảm )" value="${esc(c.prefix)}"><input type="text" class="grow" data-p="suffix" placeholder="Chữ sau (VD: ₫, %)" value="${esc(c.suffix)}"></div>
-   <button class="btn red" data-act="delfield">Xóa trường này</button></div>`}
+   <button class="btn red" data-act="delfield">Xóa trường này</button></div>`}`}
 let prevT;function renderPreview(){clearTimeout(prevT);prevT=setTimeout(async()=>{if(!draft)return;try{await fontsReady(draft);renderSticker(draft,previewItem(),900,$('#prev'),await loadImg(draft.img))}catch(e){}},80)}
 async function saveDraft(){if(!draft)return;draft.name=$('#edName').value.trim()||'Mẫu';const btn=$('#btnEdSave');btn.disabled=true;$('#edState').textContent='Đang lưu...';
   try{const {img,_img,imgId,updatedAt,...tpl}=draft;const j=await apiPost({action:'saveTemplate',tpl,image:_img?img:null});
@@ -627,7 +656,7 @@ const fp=$('#fields');
 function fpUpdate(e){const row=e.target.closest('.fld'),p=e.target.dataset.p;if(!row||!p||p==='bold')return;const c=draft.fields[row.dataset.k];
   if(p==='on'||p==='strike'||p==='underline')c[p]=e.target.checked;else if(p==='lines')c.lines=+e.target.value;
   else if(p==='scale'){c.scale=+e.target.value;$('#scaleVal').textContent=c.scale+'%'}
-  else if(p==='src'){if(e.type!=='change')return;if(c.label===srcLabel(c.src))c.label=srcLabel(e.target.value);c.src=e.target.value}else c[p]=e.target.value;
+  else if(p==='src'){if(e.type!=='change')return;if(c.label===srcLabel(c.src))c.label=srcLabel(e.target.value);c.src=e.target.value;if(c.src==='qr'){const s=Math.min(c.w*draft.iw,c.h*draft.ih,draft.ih*.35);c.w=s/draft.iw;c.h=s/draft.ih;c.x=Math.min(c.x,1-c.w);c.y=Math.min(c.y,1-c.h);c.scale=100}}else c[p]=e.target.value;
   markDirty();if(p==='label'){renderBoxes();const ch=$('#fchips').querySelector(`[data-k="${row.dataset.k}"]`);if(ch)ch.textContent=c.label}
   if((p==='on'||p==='src')&&e.type==='change'){renderBoxes();renderFieldPanel()}renderPreview()}
 fp.addEventListener('input',fpUpdate);fp.addEventListener('change',fpUpdate);
@@ -653,8 +682,9 @@ $('#fontList').addEventListener('click',async e=>{const b=e.target.closest('[dat
   const used=ST.templates.filter(t=>Object.values(t.fields).some(c=>c.font===name)).map(t=>t.name);
   if(!confirm(`Xóa font "${name}"?`+(used.length?`\nMẫu đang dùng: ${used.join(', ')} (sẽ đổi sang font mặc định)`:'')))return;
   try{await apiPost({action:'deleteFont',name});ST.fonts=ST.fonts.filter(f=>f.name!==name);delete FONTS[name];delete fontLoaded[name];cacheNow();renderFontList();renderGallery();toast('Đã xóa font')}catch(err){toast('Lỗi: '+err.message,4000)}});
-$('#btnSaveSet').onclick=async()=>{const s={margin:Math.max(0,+$('#sMargin').value||0),gap:Math.max(0,+$('#sGap').value||0),cut:$('#sCut').checked};
-  try{await apiPost({action:'saveSettings',settings:{margin:s.margin,gap:s.gap,cut:s.cut?'TRUE':'FALSE'}});ST.settings=s;cacheNow();updateLayoutInfo();toast('Đã lưu cài đặt in')}catch(e){toast('Lỗi: '+e.message,4000)}};
+$('#dataInfo').addEventListener('change',e=>{if(e.target.id==='onlyIssue'){onlyIssue=e.target.checked;renderAdmin()}});
+$('#btnSaveSet').onclick=async()=>{const s={margin:Math.max(0,+$('#sMargin').value||0),gap:Math.max(0,+$('#sGap').value||0),cut:$('#sCut').checked,dpi:+$('#sDpi').value||400};
+  try{await apiPost({action:'saveSettings',settings:{margin:s.margin,gap:s.gap,cut:s.cut?'TRUE':'FALSE',dpi:s.dpi}});ST.settings=s;cacheNow();updateLayoutInfo();toast('Đã lưu cài đặt in')}catch(e){toast('Lỗi: '+e.message,4000)}};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 
 /* ---------- khởi động ---------- */
