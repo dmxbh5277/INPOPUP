@@ -124,7 +124,7 @@ s{color:var(--muted)}.red{color:var(--red);font-weight:800}
 /* ---------- dock (mobile) ---------- */
 .status.bad::before{background:var(--sel);box-shadow:0 0 0 3px #fff1db}
 .grp{display:flex;align-items:center;gap:8px;margin:14px 0 8px;padding:8px 10px;background:var(--soft);border-radius:10px;font-size:13.5px}
-.grp:first-child{margin-top:0}.grp .chk b{font-weight:800}.grp .hint{margin:0 0 0 auto;white-space:nowrap}
+.grp:first-child{margin-top:0}.grp .chk b{font-weight:800}.grp .hint{margin:0 0 0 auto;white-space:nowrap}.grp .x{padding:4px 6px;white-space:nowrap}
 .it .ck{width:20px;height:20px;accent-color:var(--sel);flex:none;cursor:pointer}
 .it.on{border-color:var(--sel);box-shadow:0 0 0 3px rgba(240,140,0,.14)}
 .tplName{font-size:12px;font-weight:700;color:var(--pri);background:var(--pri2);border-radius:6px;padding:2px 8px}
@@ -209,7 +209,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
       <button class="btn" id="btnSelAll" style="padding:6px 11px;font-size:13px">☑ Tất cả</button>
       <button class="btn red" id="btnClear" style="padding:6px 11px;font-size:13px">Xóa hết</button>
     </div>
-    <div class="bulk" id="bulkBar" hidden><span>Đã chọn <b id="bulkN">0</b> SP →</span><select id="bulkTpl"></select><button class="btn" id="bulkNone" style="padding:7px 10px;font-size:13px">Bỏ chọn</button></div>
+    <div class="bulk" id="bulkBar" hidden><span>Đã chọn <b id="bulkN">0</b> SP →</span><select id="bulkTpl"></select><button class="btn" id="bulkNone" style="padding:7px 10px;font-size:13px">Bỏ chọn</button><button class="btn red" id="bulkDel" style="padding:7px 10px;font-size:13px">🗑 Xóa đã chọn</button></div>
     <div id="cart"></div>
   </div>
   </div>
@@ -542,7 +542,7 @@ function renderCart(){const box=$('#cart');renderBulk();
     ${w?`<div class="wmsg">⚠ ${w}</div>`:(itemNote(it)?`<div class="wmsg" style="color:var(--muted)">ℹ ${itemNote(it)}</div>`:'')}</div>`};
   box.innerHTML=order.map(g=>{const ids=groups[g],all=ids.every(i=>ST.cart[i].chk),n=ids.reduce((s,i)=>s+(+ST.cart[i].qty||1),0);
     const lb=g==='m'?'Tìm / nhập tay':`Lượt quét ${bIdx(g)||''} · ${bTime(g)}`;
-    return `<div class="grp"><label class="chk"><input type="checkbox" data-grp="${g}" ${all?'checked':''}><b>${lb}</b></label><span class="hint">${ids.length} SP · ${n} sticker</span></div>`+ids.map(card).join('')}).join('');updateCounts()}
+    return `<div class="grp"><label class="chk"><input type="checkbox" data-grp="${g}" ${all?'checked':''}><span><b>${lb}</b><span class="hint" style="display:block;margin:0;font-size:12px">${ids.length} SP · ${n} sticker</span></span></label><button class="x" style="margin-left:auto" data-delgrp="${g}" data-lb="${esc(lb)}" title="Xóa cả lượt" style="font-size:13px;font-weight:700">🗑 Xóa lượt</button></div>`+ids.map(card).join('')}).join('');updateCounts()}
 function renderBulk(){const n=ST.cart.filter(i=>i.chk).length;$('#bulkBar').hidden=!n;$('#bulkN').textContent=n;
   $('#bulkTpl').innerHTML='<option value="">— Chọn mẫu —</option><option value="__c">Mẫu chung</option>'+ST.templates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
   $('#btnSelAll').textContent=ST.cart.length&&ST.cart.every(i=>i.chk)?'☐ Bỏ':'☑ Tất cả'}
@@ -783,10 +783,14 @@ $('#cart').addEventListener('change',e=>{const card=e.target.closest('.it'),k=e.
   if(k==='chk'){it.chk=e.target.checked;saveCart();renderCart();return}
   if(k==='name')it.name=e.target.value;else if(k==='tpl'){it.tpl=e.target.value||null;mergeDupes()}else if(k==='qty')it.qty=Math.max(1,parseInt(e.target.value,10)||1);else it[k]=toNum(e.target.value);
   saveCart();renderCart();if(i===0&&k!=='qty'&&k!=='tpl')renderGallery()});
-$('#cart').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const i=+b.closest('.it').dataset.i,it=ST.cart[i];
+$('#cart').addEventListener('click',e=>{const dg=e.target.closest('[data-delgrp]');
+  if(dg){const g=dg.dataset.delgrp,its=ST.cart.filter(x=>(x.batch||'m')===g),n=its.reduce((s,x)=>s+(+x.qty||1),0);
+    if(!confirm(`Xóa "${dg.dataset.lb}"?\n${its.length} sản phẩm · ${n} sticker`))return;ST.cart=ST.cart.filter(x=>(x.batch||'m')!==g);saveCart();renderCart();renderGallery();toast('Đã xóa lượt');return}
+  const b=e.target.closest('[data-act]');if(!b)return;const i=+b.closest('.it').dataset.i,it=ST.cart[i];
   if(b.dataset.act==='del')ST.cart.splice(i,1);else if(b.dataset.act==='plus')it.qty=(+it.qty||1)+1;else if(b.dataset.act==='minus')it.qty=Math.max(1,(+it.qty||1)-1);
   saveCart();renderCart();if(i===0&&b.dataset.act==='del')renderGallery()});
 $('#btnSelAll').onclick=()=>{const on=!ST.cart.every(i=>i.chk);ST.cart.forEach(i=>i.chk=on);saveCart();renderCart()};
+$('#bulkDel').onclick=()=>{const sel=ST.cart.filter(i=>i.chk);if(!sel.length||!confirm(`Xóa ${sel.length} sản phẩm đã chọn?`))return;ST.cart=ST.cart.filter(i=>!i.chk);saveCart();renderCart();renderGallery();toast(`Đã xóa ${sel.length} sản phẩm`)};
 $('#bulkNone').onclick=()=>{ST.cart.forEach(i=>i.chk=false);saveCart();renderCart()};
 $('#bulkTpl').onchange=e=>{const v=e.target.value;if(!v)return;const sel=ST.cart.filter(i=>i.chk);sel.forEach(i=>{i.tpl=v==='__c'?null:v;i.chk=false});mergeDupes();saveCart();renderCart();
   toast(`Đã áp dụng mẫu "${v==='__c'?'Mẫu chung':tplById(v).name}" cho ${sel.length} sản phẩm`,3000)};
