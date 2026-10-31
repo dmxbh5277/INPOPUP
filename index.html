@@ -123,6 +123,16 @@ s{color:var(--muted)}.red{color:var(--red);font-weight:800}
 #outBox .btn{flex-direction:column;gap:2px;padding:12px 6px;font-size:13.5px}
 /* ---------- dock (mobile) ---------- */
 .status.bad::before{background:var(--sel);box-shadow:0 0 0 3px #fff1db}
+.grp{display:flex;align-items:center;gap:8px;margin:14px 0 8px;padding:8px 10px;background:var(--soft);border-radius:10px;font-size:13.5px}
+.grp:first-child{margin-top:0}.grp .chk b{font-weight:800}.grp .hint{margin:0 0 0 auto;white-space:nowrap}
+.it .ck{width:20px;height:20px;accent-color:var(--sel);flex:none;cursor:pointer}
+.it.on{border-color:var(--sel);box-shadow:0 0 0 3px rgba(240,140,0,.14)}
+.tplName{font-size:12px;font-weight:700;color:var(--pri);background:var(--pri2);border-radius:6px;padding:2px 8px}
+.bulk{position:sticky;top:66px;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff4e0;border:1.5px solid #ffd08a;border-radius:12px;padding:9px 10px;margin-bottom:12px;box-shadow:0 8px 20px -12px rgba(240,140,0,.6)}
+.bulk select{width:auto;flex:1;min-width:150px;padding:8px 10px;font-weight:700;border-color:#ffc56b}
+.tplChips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px}
+.tplChips button{flex:none;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:7px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.tplChips button.on{background:var(--acc);border-color:var(--acc);color:var(--pri-d)}
 .dock{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:40;background:var(--pri-d);color:#fff;border-radius:16px;padding:9px 9px 9px 16px;
   display:flex;align-items:center;gap:10px;box-shadow:0 14px 34px -12px rgba(7,59,140,.75);transform:translateY(140%);transition:transform .25s ease}
 .dock.on{transform:none}
@@ -195,9 +205,11 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
 
   <div class="card">
     <div class="row" style="margin-bottom:12px">
-      <h3 class="grow" style="margin:0"><span class="num">2</span>Danh sách in <span id="listInfo" class="hint" style="font-weight:600;margin:0"></span></h3>
+      <h3 class="grow" style="margin:0;flex-wrap:wrap;row-gap:0"><span class="num">2</span>Danh sách in <span id="listInfo" class="hint" style="font-weight:600;margin:0;flex-basis:100%;padding-left:35px"></span></h3>
+      <button class="btn" id="btnSelAll" style="padding:6px 11px;font-size:13px">☑ Tất cả</button>
       <button class="btn red" id="btnClear" style="padding:6px 11px;font-size:13px">Xóa hết</button>
     </div>
+    <div class="bulk" id="bulkBar" hidden><span>Đã chọn <b id="bulkN">0</b> SP →</span><select id="bulkTpl"></select><button class="btn" id="bulkNone" style="padding:7px 10px;font-size:13px">Bỏ chọn</button></div>
     <div id="cart"></div>
   </div>
   </div>
@@ -322,6 +334,8 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
   <div class="mbox">
     <div style="margin-bottom:10px"><div class="seg scanSeg"><button data-v="bulk">⚡ In hàng loạt</button><button data-v="single">✍️ In lẻ</button></div></div>
     <div id="reader"></div>
+    <div style="color:#cbd5e1;font-size:12.5px;font-weight:700;margin:2px 2px 6px">MẪU IN CHO MÃ QUÉT TIẾP THEO</div>
+    <div class="tplChips" id="scanTpls"></div>
     <div id="scanMsg">Đưa mã vạch / QR vào khung</div>
     <div id="scanCount" style="color:#cbd5e1;text-align:center;font-size:13px;margin-bottom:6px"></div>
     <div id="scanPicked"></div>
@@ -389,13 +403,13 @@ const SAMPLE={code:'SP001',name:'Tủ lạnh Samsung Inverter 236 lít RT22M4032
 const PAPERS={A4:[210,297],A5:[148,210]};
 
 /* ---------- trạng thái & lưu trữ ---------- */
-const ST={api:'',products:[],templates:[],fonts:[],settings:{margin:0,gap:0,cut:true,dpi:400},sheetUrl:'',cart:[],picked:null,opts:{tpl:null,paper:'A4',date:'',scanMode:'bulk'},loadedAt:0};
+const ST={api:'',products:[],templates:[],fonts:[],settings:{margin:0,gap:0,cut:true,dpi:400},sheetUrl:'',cart:[],picked:null,opts:{tpl:null,paper:'A4',date:'',scanMode:'bulk',scanTpl:''},batches:[],curBatch:null,loadedAt:0};
 const IDB={db:null,
   open(){return new Promise((res,rej)=>{const r=indexedDB.open('stickerDMX2',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)})},
   get(k){return new Promise(res=>{try{const t=this.db.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>res(undefined)}catch(e){res(undefined)}})},
   set(k,v){return new Promise(res=>{try{const t=this.db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res(true);t.onerror=()=>res(false)}catch(e){res(false)}})}};
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const saveCart=()=>{LS.set('cart',ST.cart);updateCounts()};
+const saveCart=()=>{const used=new Set(ST.cart.map(i=>i.batch));ST.batches=ST.batches.filter(b=>used.has(b.id)||b.id===ST.curBatch);LS.set('cart',ST.cart);LS.set('batches',ST.batches);updateCounts()};
 const saveOpts=()=>LS.set('opts',ST.opts);
 
 /* ---------- API ---------- */
@@ -456,6 +470,9 @@ function search(q){const n=noAcc(q);if(!n)return [];const toks=n.split(/\s+/);co
   res.sort((a,b)=>(noAcc(b.code)===n)-(noAcc(a.code)===n));return res.slice(0,30)}
 const findCode=code=>{const n=noAcc(code);return n?ST.products.find(r=>noAcc(r.code)===n):null};
 const cartFind=code=>code?ST.cart.find(x=>x.code&&noAcc(x.code)===noAcc(code)):null;
+const cartFindT=(code,tpl)=>code?ST.cart.find(x=>x.code&&noAcc(x.code)===noAcc(code)&&(x.tpl||null)===(tpl||null)):null;
+const scanOpts=()=>({tpl:ST.opts.scanTpl||null,batch:ST.curBatch||'m'});
+function mergeDupes(){const seen={};ST.cart=ST.cart.filter(it=>{if(!it.code)return true;const k=noAcc(it.code)+'|'+(it.tpl||'');if(seen[k]){seen[k].qty=(+seen[k].qty||0)+(+it.qty||0);return false}seen[k]=it;return true})}
 function doSearch(){const q=$('#q').value;lastRes=search(q);const box=$('#results');
   if(!q.trim()){box.innerHTML='';return}
   if(!ST.products.length){box.innerHTML='<p class="hint">Chưa có dữ liệu sản phẩm. Có thể bấm ✍️ Nhập tay.</p>';return}
@@ -468,34 +485,39 @@ function renderPicked(){const el=$('#picked');const p=ST.picked;if(!p){el.hidden
    <div class="pr">${p.ny?`<s>${fmt(p.ny)}</s> `:''}<span class="red">${fmt(p.km)}</span> ${pc?`<span class="pct">-${pc}%</span>`:''}</div>
    <div class="row"><span>Số lượng</span><input type="number" id="pQty" min="1" inputmode="numeric" placeholder="SL" enterkeyhint="done"><button class="btn pri grow" id="pAdd">+ Thêm</button></div>`}
 function addPicked(){const p=ST.picked;if(!p)return;const q=parseInt($('#pQty').value,10);if(!(q>0)){toast('Nhập số lượng');$('#pQty').focus();return}
-  addToCart(p,q);ST.picked=null;renderPicked();$('#q').value='';doSearch();if(!$('#scanModal').hidden)scanMsg('✅ Đã thêm. Quét sản phẩm tiếp theo')}
-function addToCart(p,q){const ex=cartFind(p.code);
+  addToCart(p,q,p._o||{});ST.picked=null;renderPicked();$('#q').value='';doSearch();if(!$('#scanModal').hidden)scanMsg('✅ Đã thêm. Quét sản phẩm tiếp theo')}
+function addToCart(p,q,o={}){const tpl=o.tpl||null,ex=cartFindT(p.code,tpl);
   if(ex){ex.qty=(+ex.qty||0)+q;toast(`${p.name}: ${ex.qty} sticker`)}
-  else{ST.cart.unshift({code:p.code||'',name:p.name||'',ny:toNum(p.ny),km:toNum(p.km),qty:q,tpl:null});toast('Đã thêm: '+p.name)}
+  else{ST.cart.unshift({code:p.code||'',name:p.name||'',ny:toNum(p.ny),km:toNum(p.km),qty:q,tpl,batch:o.batch||'m'});toast('Đã thêm: '+p.name)}
   saveCart();renderCart();renderGallery()}
 /* mã từ camera hoặc Enter */
 function handleCode(code,fromScan){code=String(code||'').trim();if(!code)return;const p=findCode(code);
   if(!p){beep(false);if(fromScan)scanMsg('❌ Không tìm thấy mã: '+code);else doSearch();return}
-  const ex=cartFind(p.code);
-  if(fromScan&&ST.opts.scanMode==='single'){if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code))return;beep(true);pick(p);scanMsg(ex?`Đã có ${ex.qty} – nhập số lượng thêm → bấm Thêm`:'Nhập số lượng → bấm Thêm');return}
+  const o=fromScan?scanOpts():{},ex=fromScan?cartFindT(p.code,o.tpl):cartFind(p.code);
+  if(fromScan&&ST.opts.scanMode==='single'){if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code))return;beep(true);pick({...p,_o:o});scanMsg(ex?`Đã có ${ex.qty} – nhập số lượng thêm → bấm Thêm`:'Nhập số lượng → bấm Thêm');return}
   if(ex){ex.qty=(+ex.qty||0)+1;saveCart();renderCart();beep(true);const m=`➕ ${p.name}: ${ex.qty} sticker`;fromScan?scanMsg(m):toast(m);if(fromScan){scanCount++;$('#scanCount').textContent=`Đã quét ${scanCount} lần · Danh sách: ${ST.cart.length} SP`}
     if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code)){ST.picked=null;renderPicked()}return}
-  beep(true);if(fromScan){addToCart(p,1);if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code)){ST.picked=null;renderPicked()}scanMsg(`✅ Đã thêm: ${p.name} (1 sticker)`);scanCount++;$('#scanCount').textContent=`Đã quét ${scanCount} lần · Danh sách: ${ST.cart.length} SP`;return}
+  beep(true);if(fromScan){addToCart(p,1,o);if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code)){ST.picked=null;renderPicked()}scanMsg(`✅ Đã thêm: ${p.name} (1 sticker)`);scanCount++;$('#scanCount').textContent=`Đã quét ${scanCount} lần · Danh sách: ${ST.cart.length} SP`;return}
   pick(p)}
 let actx;function beep(ok){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=ok?1500:300;g.gain.value=.15;o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+(ok?.08:.25))}catch(e){}try{navigator.vibrate&&navigator.vibrate(ok?40:[60,40,60])}catch(e){}}
 
 /* ---------- camera quét ---------- */
 let scanner=null,lastScan={code:'',t:0},scanCount=0;
 const scanMsg=m=>{$('#scanMsg').textContent=m};
+function renderScanTpls(){const cur=ST.opts.scanTpl||'';if(cur&&!tplById(cur))ST.opts.scanTpl='';const ch=tplById(ST.opts.tpl)||ST.templates[0];
+  $('#scanTpls').innerHTML=`<button data-id="" class="${!ST.opts.scanTpl?'on':''}" title="${ch?esc(ch.name):''}">Mẫu chung</button>`+ST.templates.map(t=>`<button data-id="${t.id}" class="${t.id===ST.opts.scanTpl?'on':''}">${esc(t.name)}</button>`).join('')}
 function scanHelp(){return ST.opts.scanMode==='single'?'In lẻ: quét mã → nhập số lượng → bấm Thêm.':'In hàng loạt: mỗi lần quét = +1 sticker, chỉnh số lượng sau.'}
 function setScanMode(m){ST.opts.scanMode=m==='single'?'single':'bulk';saveOpts();document.querySelectorAll('.scanSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===ST.opts.scanMode));
   $('#modeHint').textContent=scanHelp();if(!$('#scanModal').hidden){$('#scanCount').textContent=scanHelp();if(ST.opts.scanMode==='bulk'&&ST.picked){ST.picked=null;renderPicked()}}}
 async function openScan(){if(!window.Html5Qrcode)return toast('Chưa tải được bộ quét mã, kiểm tra mạng');
-  $('#scanModal').hidden=false;$('#scanPicked').appendChild($('#picked'));ST.picked=null;renderPicked();scanCount=0;$('#scanCount').textContent=scanHelp();scanMsg('Đưa mã vạch / QR vào khung');
+  ST.curBatch='b'+Date.now();ST.batches.push({id:ST.curBatch,t:Date.now()});renderScanTpls();$('#scanModal').hidden=false;$('#scanPicked').appendChild($('#picked'));ST.picked=null;renderPicked();scanCount=0;$('#scanCount').textContent=scanHelp();scanMsg('Đưa mã vạch / QR vào khung');
   try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:(w,h)=>({width:Math.floor(Math.min(w*.85,340)),height:Math.floor(Math.min(h*.6,180))})},
     txt=>{const now=Date.now(),c=String(txt).trim();if(c===lastScan.code&&now-lastScan.t<2500)return;lastScan={code:c,t:now};handleCode(c,true)},()=>{})}
   catch(e){toast('Không mở được camera: '+(e.message||e),4000);closeScan()}}
-async function closeScan(){$('#scanModal').hidden=true;$('#pickedHome').appendChild($('#picked'));if(scanCount)toast(`Đã thêm từ quét mã. Kiểm tra số lượng ở Danh sách in.`,3000);const s=scanner;scanner=null;if(s){try{await s.stop()}catch(e){}try{s.clear()}catch(e){}}}
+async function closeScan(){$('#scanModal').hidden=true;$('#pickedHome').appendChild($('#picked'));const bid=ST.curBatch;ST.curBatch=null;
+  const its=ST.cart.filter(i=>i.batch===bid);
+  if(its.length){ST.cart.forEach(i=>i.chk=false);if(its.some(i=>!i.tpl)){its.forEach(i=>i.chk=!i.tpl);toast('Đã tick sẵn lượt vừa quét – chọn mẫu ở thanh màu cam để áp dụng',4500)}else toast('Đã thêm từ quét mã. Kiểm tra số lượng ở Danh sách in.',3000)}
+  saveCart();renderCart();if(its.length)setTimeout(()=>$('#cart').closest('.card').scrollIntoView({behavior:'smooth',block:'start'}),100);const s=scanner;scanner=null;if(s){try{await s.stop()}catch(e){}try{s.clear()}catch(e){}}}
 
 /* ---------- danh sách in ---------- */
 const tplById=id=>ST.templates.find(t=>t.id===id);
@@ -506,16 +528,24 @@ function itemIssue(it){const ny=toNum(it.ny),km=toNum(it.km);
   if(km===ny)return {lv:'note',msg:'Không giảm giá (KM = NY)'};return null}
 function itemWarn(it){const x=itemIssue(it);return x&&x.lv==='err'?x.msg:''}
 function itemNote(it){const x=itemIssue(it);return x&&x.lv==='note'?x.msg:''}
-function renderCart(){const box=$('#cart');
+function renderCart(){const box=$('#cart');renderBulk();
   if(!ST.cart.length){box.innerHTML='<div class="empty">Chưa có sản phẩm. Tìm hoặc quét mã để thêm.</div>';updateCounts();return}
   const topt=cur=>`<option value="">Mẫu chung</option>`+ST.templates.map(t=>`<option value="${t.id}" ${t.id===cur?'selected':''}>${esc(t.name)}</option>`).join('');
-  box.innerHTML=ST.cart.map((it,i)=>{const w=itemWarn(it),p=calcPct(it);return `<div class="it ${w?'warn':''}" data-i="${i}">
-    <div class="row"><input type="text" class="grow nm" data-k="name" value="${esc(it.name)}"><button class="x" data-act="del">✕</button></div>
+  const order=[],groups={};ST.cart.forEach((it,i)=>{const g=it.batch||'m';if(!groups[g]){groups[g]=[];order.push(g)}groups[g].push(i)});
+  const bIdx=id=>ST.batches.findIndex(b=>b.id===id)+1,bTime=id=>{const b=ST.batches.find(x=>x.id===id);return b?new Date(b.t).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}):''};
+  const card=i=>{const it=ST.cart[i],w=itemWarn(it),p=calcPct(it);return `<div class="it ${w?'warn':''} ${it.chk?'on':''}" data-i="${i}">
+    <div class="row"><input type="checkbox" class="ck" data-k="chk" ${it.chk?'checked':''}><input type="text" class="grow nm" data-k="name" value="${esc(it.name)}"><button class="x" data-act="del">✕</button></div>
     <div class="prc"><label><i>Giá NY <span class="code">${esc(it.code)||'—'}</span></i><input type="text" inputmode="numeric" data-k="ny" value="${fmt(it.ny)}"></label>
       <label><i>Giá KM ${p?`<span class="pct">-${p}%</span>`:''}</i><input type="text" inputmode="numeric" data-k="km" value="${fmt(it.km)}"></label></div>
     <div class="row sm"><select data-k="tpl">${topt(it.tpl)}</select>
       <div class="qty"><button data-act="minus">−</button><input type="number" inputmode="numeric" data-k="qty" value="${it.qty||1}" min="1"><button data-act="plus">+</button></div></div>
-    ${w?`<div class="wmsg">⚠ ${w}</div>`:(itemNote(it)?`<div class="wmsg" style="color:var(--muted)">ℹ ${itemNote(it)}</div>`:'')}</div>`}).join('');updateCounts()}
+    ${w?`<div class="wmsg">⚠ ${w}</div>`:(itemNote(it)?`<div class="wmsg" style="color:var(--muted)">ℹ ${itemNote(it)}</div>`:'')}</div>`};
+  box.innerHTML=order.map(g=>{const ids=groups[g],all=ids.every(i=>ST.cart[i].chk),n=ids.reduce((s,i)=>s+(+ST.cart[i].qty||1),0);
+    const lb=g==='m'?'Tìm / nhập tay':`Lượt quét ${bIdx(g)||''} · ${bTime(g)}`;
+    return `<div class="grp"><label class="chk"><input type="checkbox" data-grp="${g}" ${all?'checked':''}><b>${lb}</b></label><span class="hint">${ids.length} SP · ${n} sticker</span></div>`+ids.map(card).join('')}).join('');updateCounts()}
+function renderBulk(){const n=ST.cart.filter(i=>i.chk).length;$('#bulkBar').hidden=!n;$('#bulkN').textContent=n;
+  $('#bulkTpl').innerHTML='<option value="">— Chọn mẫu —</option><option value="__c">Mẫu chung</option>'+ST.templates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  $('#btnSelAll').textContent=ST.cart.length&&ST.cart.every(i=>i.chk)?'☐ Bỏ':'☑ Tất cả'}
 function updateCounts(){const n=ST.cart.reduce((s,i)=>s+(+i.qty||1),0);$('#listInfo').textContent=`· ${ST.cart.length} SP · ${n} sticker`;$('#hdCount').innerHTML=`<b>${n}</b> sticker`;updateLayoutInfo();
   $('#dockN').textContent=`${n} sticker`;$('#dockP').textContent=`${ST.cart.length} sản phẩm`+(lastPages?` · ${lastPages} trang ${ST.opts.paper}`:'');$('#dock').classList.toggle('on',n>0)}
 
@@ -748,13 +778,21 @@ $('#btnManualClose').onclick=()=>{$('#manualModal').hidden=true};
 ['#mNy','#mKm'].forEach(s=>$(s).addEventListener('blur',e=>{const n=toNum(e.target.value);e.target.value=n?fmt(n):''}));
 $('#btnManualAdd').onclick=()=>{const p={code:$('#mCode').value.trim(),name:$('#mName').value.trim(),ny:toNum($('#mNy').value),km:toNum($('#mKm').value)};const q=parseInt($('#mQty').value,10)||1;
   if(!p.name)return toast('Nhập tên sản phẩm');if(!p.km&&!p.ny)return toast('Nhập giá');addToCart(p,q);['#mCode','#mName','#mNy','#mKm'].forEach(s=>$(s).value='');$('#mQty').value=1;$('#manualModal').hidden=true};
-$('#cart').addEventListener('change',e=>{const card=e.target.closest('.it'),k=e.target.dataset.k;if(!card||!k)return;const i=+card.dataset.i,it=ST.cart[i];
-  if(k==='name')it.name=e.target.value;else if(k==='tpl')it.tpl=e.target.value||null;else if(k==='qty')it.qty=Math.max(1,parseInt(e.target.value,10)||1);else it[k]=toNum(e.target.value);
+$('#cart').addEventListener('change',e=>{const card=e.target.closest('.it'),k=e.target.dataset.k;if(!e.target.dataset.grp&&(!card||!k))return;const i=card?+card.dataset.i:-1,it=ST.cart[i];
+  if(e.target.dataset.grp){const g=e.target.dataset.grp;ST.cart.forEach(x=>{if((x.batch||'m')===g)x.chk=e.target.checked});saveCart();renderCart();return}
+  if(k==='chk'){it.chk=e.target.checked;saveCart();renderCart();return}
+  if(k==='name')it.name=e.target.value;else if(k==='tpl'){it.tpl=e.target.value||null;mergeDupes()}else if(k==='qty')it.qty=Math.max(1,parseInt(e.target.value,10)||1);else it[k]=toNum(e.target.value);
   saveCart();renderCart();if(i===0&&k!=='qty'&&k!=='tpl')renderGallery()});
 $('#cart').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const i=+b.closest('.it').dataset.i,it=ST.cart[i];
   if(b.dataset.act==='del')ST.cart.splice(i,1);else if(b.dataset.act==='plus')it.qty=(+it.qty||1)+1;else if(b.dataset.act==='minus')it.qty=Math.max(1,(+it.qty||1)-1);
   saveCart();renderCart();if(i===0&&b.dataset.act==='del')renderGallery()});
-$('#btnClear').onclick=()=>{if(ST.cart.length&&confirm('Xóa toàn bộ danh sách in?')){ST.cart=[];saveCart();renderCart();renderGallery();$('#outBox').hidden=true;$('#genBox').hidden=true}};
+$('#btnSelAll').onclick=()=>{const on=!ST.cart.every(i=>i.chk);ST.cart.forEach(i=>i.chk=on);saveCart();renderCart()};
+$('#bulkNone').onclick=()=>{ST.cart.forEach(i=>i.chk=false);saveCart();renderCart()};
+$('#bulkTpl').onchange=e=>{const v=e.target.value;if(!v)return;const sel=ST.cart.filter(i=>i.chk);sel.forEach(i=>{i.tpl=v==='__c'?null:v;i.chk=false});mergeDupes();saveCart();renderCart();
+  toast(`Đã áp dụng mẫu "${v==='__c'?'Mẫu chung':tplById(v).name}" cho ${sel.length} sản phẩm`,3000)};
+$('#scanTpls').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;ST.opts.scanTpl=b.dataset.id;saveOpts();renderScanTpls();
+  scanMsg('Mẫu in: '+(b.dataset.id?tplById(b.dataset.id).name:'Mẫu chung')+' – quét tiếp');if(ST.picked&&ST.picked._o)ST.picked._o.tpl=ST.opts.scanTpl||null});
+$('#btnClear').onclick=()=>{if(ST.cart.length&&confirm('Xóa toàn bộ danh sách in?')){ST.cart=[];ST.batches=[];saveCart();renderCart();renderGallery();$('#outBox').hidden=true;$('#genBox').hidden=true}};
 $('#gallery').addEventListener('click',e=>{const c=e.target.closest('.tcard');if(!c)return;ST.opts.tpl=c.dataset.id;saveOpts();$('#gallery').querySelectorAll('.tcard').forEach(x=>x.classList.toggle('sel',x===c));updateLayoutInfo()});
 $('#oDate').addEventListener('input',e=>{ST.opts.date=e.target.value;saveOpts();clearTimeout(sT);sT=setTimeout(renderGallery,400)});
 $('#paperSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;ST.opts.paper=b.dataset.v;saveOpts();$('#paperSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));updateLayoutInfo()});
@@ -853,7 +891,7 @@ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.return
 /* ---------- khởi động ---------- */
 (async()=>{try{await IDB.open()}catch(e){}
   const qp=new URLSearchParams(location.search).get('api');if(qp)LS.set('api',qp);
-  ST.api=LS.get('api','');ST.cart=LS.get('cart',[]);Object.assign(ST.opts,LS.get('opts',{}));
+  ST.api=LS.get('api','');ST.cart=LS.get('cart',[]);ST.batches=LS.get('batches',[]);Object.assign(ST.opts,LS.get('opts',{}));
   $('#oDate').value=ST.opts.date||'';setScanMode(ST.opts.scanMode);$('#paperSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===ST.opts.paper));
   if(await loadCache())setStatus();renderAll();loadAll(false)})();
 </script>
