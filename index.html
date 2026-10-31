@@ -183,6 +183,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
       <div class="searchBox"><input type="search" id="q" placeholder="Nhập mã hoặc tên sản phẩm..." autocomplete="off" enterkeyhint="search"></div>
       <button class="btn pri" id="btnScan">📷 Quét</button>
     </div>
+    <div style="margin-top:10px"><div class="seg scanSeg"><button data-v="bulk">⚡ In hàng loạt</button><button data-v="single">✍️ In lẻ</button></div><p class="hint" id="modeHint" style="margin:5px 2px 0"></p></div>
     <div class="row" style="margin-top:9px">
       <span class="hint grow status" id="dataStatus" style="margin:0">Đang tải dữ liệu...</span>
       <button class="btn" id="btnManualOpen" style="padding:6px 11px;font-size:13px">✍️ Nhập tay</button>
@@ -319,9 +320,11 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
 
 <div class="modal" id="scanModal" hidden>
   <div class="mbox">
+    <div style="margin-bottom:10px"><div class="seg scanSeg"><button data-v="bulk">⚡ In hàng loạt</button><button data-v="single">✍️ In lẻ</button></div></div>
     <div id="reader"></div>
     <div id="scanMsg">Đưa mã vạch / QR vào khung</div>
     <div id="scanCount" style="color:#cbd5e1;text-align:center;font-size:13px;margin-bottom:6px"></div>
+    <div id="scanPicked"></div>
     <button class="btn big" style="background:#fff;margin-top:6px" id="btnCloseScan">Xong – Đóng camera</button>
   </div>
 </div>
@@ -386,7 +389,7 @@ const SAMPLE={code:'SP001',name:'Tủ lạnh Samsung Inverter 236 lít RT22M4032
 const PAPERS={A4:[210,297],A5:[148,210]};
 
 /* ---------- trạng thái & lưu trữ ---------- */
-const ST={api:'',products:[],templates:[],fonts:[],settings:{margin:0,gap:0,cut:true,dpi:400},sheetUrl:'',cart:[],picked:null,opts:{tpl:null,paper:'A4',date:''},loadedAt:0};
+const ST={api:'',products:[],templates:[],fonts:[],settings:{margin:0,gap:0,cut:true,dpi:400},sheetUrl:'',cart:[],picked:null,opts:{tpl:null,paper:'A4',date:'',scanMode:'bulk'},loadedAt:0};
 const IDB={db:null,
   open(){return new Promise((res,rej)=>{const r=indexedDB.open('stickerDMX2',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)})},
   get(k){return new Promise(res=>{try{const t=this.db.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>res(undefined)}catch(e){res(undefined)}})},
@@ -474,6 +477,7 @@ function addToCart(p,q){const ex=cartFind(p.code);
 function handleCode(code,fromScan){code=String(code||'').trim();if(!code)return;const p=findCode(code);
   if(!p){beep(false);if(fromScan)scanMsg('❌ Không tìm thấy mã: '+code);else doSearch();return}
   const ex=cartFind(p.code);
+  if(fromScan&&ST.opts.scanMode==='single'){if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code))return;beep(true);pick(p);scanMsg(ex?`Đã có ${ex.qty} – nhập số lượng thêm → bấm Thêm`:'Nhập số lượng → bấm Thêm');return}
   if(ex){ex.qty=(+ex.qty||0)+1;saveCart();renderCart();beep(true);const m=`➕ ${p.name}: ${ex.qty} sticker`;fromScan?scanMsg(m):toast(m);if(fromScan){scanCount++;$('#scanCount').textContent=`Đã quét ${scanCount} lần · Danh sách: ${ST.cart.length} SP`}
     if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code)){ST.picked=null;renderPicked()}return}
   beep(true);if(fromScan){addToCart(p,1);if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code)){ST.picked=null;renderPicked()}scanMsg(`✅ Đã thêm: ${p.name} (1 sticker)`);scanCount++;$('#scanCount').textContent=`Đã quét ${scanCount} lần · Danh sách: ${ST.cart.length} SP`;return}
@@ -483,12 +487,15 @@ let actx;function beep(ok){try{actx=actx||new (window.AudioContext||window.webki
 /* ---------- camera quét ---------- */
 let scanner=null,lastScan={code:'',t:0},scanCount=0;
 const scanMsg=m=>{$('#scanMsg').textContent=m};
+function scanHelp(){return ST.opts.scanMode==='single'?'In lẻ: quét mã → nhập số lượng → bấm Thêm.':'In hàng loạt: mỗi lần quét = +1 sticker, chỉnh số lượng sau.'}
+function setScanMode(m){ST.opts.scanMode=m==='single'?'single':'bulk';saveOpts();document.querySelectorAll('.scanSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===ST.opts.scanMode));
+  $('#modeHint').textContent=scanHelp();if(!$('#scanModal').hidden){$('#scanCount').textContent=scanHelp();if(ST.opts.scanMode==='bulk'&&ST.picked){ST.picked=null;renderPicked()}}}
 async function openScan(){if(!window.Html5Qrcode)return toast('Chưa tải được bộ quét mã, kiểm tra mạng');
-  $('#scanModal').hidden=false;ST.picked=null;renderPicked();scanCount=0;$('#scanCount').textContent='Quét liên tục – mỗi lần quét = +1 sticker. Chỉnh số lượng sau.';scanMsg('Đưa mã vạch / QR vào khung');
+  $('#scanModal').hidden=false;$('#scanPicked').appendChild($('#picked'));ST.picked=null;renderPicked();scanCount=0;$('#scanCount').textContent=scanHelp();scanMsg('Đưa mã vạch / QR vào khung');
   try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:(w,h)=>({width:Math.floor(Math.min(w*.85,340)),height:Math.floor(Math.min(h*.6,180))})},
     txt=>{const now=Date.now(),c=String(txt).trim();if(c===lastScan.code&&now-lastScan.t<2500)return;lastScan={code:c,t:now};handleCode(c,true)},()=>{})}
   catch(e){toast('Không mở được camera: '+(e.message||e),4000);closeScan()}}
-async function closeScan(){$('#scanModal').hidden=true;if(scanCount)toast(`Đã thêm từ quét mã. Kiểm tra số lượng ở Danh sách in.`,3000);const s=scanner;scanner=null;if(s){try{await s.stop()}catch(e){}try{s.clear()}catch(e){}}}
+async function closeScan(){$('#scanModal').hidden=true;$('#pickedHome').appendChild($('#picked'));if(scanCount)toast(`Đã thêm từ quét mã. Kiểm tra số lượng ở Danh sách in.`,3000);const s=scanner;scanner=null;if(s){try{await s.stop()}catch(e){}try{s.clear()}catch(e){}}}
 
 /* ---------- danh sách in ---------- */
 const tplById=id=>ST.templates.find(t=>t.id===id);
@@ -734,7 +741,8 @@ $('#q').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefaul
 $('#results').addEventListener('click',e=>{const r=e.target.closest('.res');if(r)pick(lastRes[+r.dataset.i])});
 $('#picked').addEventListener('click',e=>{if(e.target.id==='pAdd')addPicked();if(e.target.id==='pClose'){ST.picked=null;renderPicked()}});
 $('#picked').addEventListener('keydown',e=>{if(e.target.id==='pQty'&&e.key==='Enter'){e.preventDefault();addPicked()}});
-$('#btnScan').onclick=openScan;$('#btnCloseScan').onclick=closeScan;
+$('#btnScan').onclick=openScan;
+document.querySelectorAll('.scanSeg').forEach(s=>s.addEventListener('click',e=>{const b=e.target.closest('button');if(b)setScanMode(b.dataset.v)}));$('#btnCloseScan').onclick=closeScan;
 $('#btnManualOpen').onclick=()=>{$('#manualModal').hidden=false;$('#mCode').value=$('#q').value.trim();setTimeout(()=>$('#mName').focus(),50)};
 $('#btnManualClose').onclick=()=>{$('#manualModal').hidden=true};
 ['#mNy','#mKm'].forEach(s=>$(s).addEventListener('blur',e=>{const n=toNum(e.target.value);e.target.value=n?fmt(n):''}));
@@ -846,7 +854,7 @@ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.return
 (async()=>{try{await IDB.open()}catch(e){}
   const qp=new URLSearchParams(location.search).get('api');if(qp)LS.set('api',qp);
   ST.api=LS.get('api','');ST.cart=LS.get('cart',[]);Object.assign(ST.opts,LS.get('opts',{}));
-  $('#oDate').value=ST.opts.date||'';$('#paperSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===ST.opts.paper));
+  $('#oDate').value=ST.opts.date||'';setScanMode(ST.opts.scanMode);$('#paperSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===ST.opts.paper));
   if(await loadCache())setStatus();renderAll();loadAll(false)})();
 </script>
 </body>
