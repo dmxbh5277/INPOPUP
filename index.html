@@ -321,7 +321,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
   <div class="mbox">
     <div id="reader"></div>
     <div id="scanMsg">Đưa mã vạch / QR vào khung</div>
-    <div id="scanPicked"></div>
+    <div id="scanCount" style="color:#cbd5e1;text-align:center;font-size:13px;margin-bottom:6px"></div>
     <button class="btn big" style="background:#fff;margin-top:6px" id="btnCloseScan">Xong – Đóng camera</button>
   </div>
 </div>
@@ -474,20 +474,21 @@ function addToCart(p,q){const ex=cartFind(p.code);
 function handleCode(code,fromScan){code=String(code||'').trim();if(!code)return;const p=findCode(code);
   if(!p){beep(false);if(fromScan)scanMsg('❌ Không tìm thấy mã: '+code);else doSearch();return}
   const ex=cartFind(p.code);
-  if(ex){ex.qty=(+ex.qty||0)+1;saveCart();renderCart();beep(true);const m=`➕ ${p.name}: ${ex.qty} sticker`;fromScan?scanMsg(m):toast(m);
+  if(ex){ex.qty=(+ex.qty||0)+1;saveCart();renderCart();beep(true);const m=`➕ ${p.name}: ${ex.qty} sticker`;fromScan?scanMsg(m):toast(m);if(fromScan){scanCount++;$('#scanCount').textContent=`Đã quét ${scanCount} lần · Danh sách: ${ST.cart.length} SP`}
     if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code)){ST.picked=null;renderPicked()}return}
-  beep(true);pick(p);if(fromScan)scanMsg('Nhập số lượng → bấm Thêm')}
+  beep(true);if(fromScan){addToCart(p,1);if(ST.picked&&noAcc(ST.picked.code)===noAcc(p.code)){ST.picked=null;renderPicked()}scanMsg(`✅ Đã thêm: ${p.name} (1 sticker)`);scanCount++;$('#scanCount').textContent=`Đã quét ${scanCount} lần · Danh sách: ${ST.cart.length} SP`;return}
+  pick(p)}
 let actx;function beep(ok){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=ok?1500:300;g.gain.value=.15;o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+(ok?.08:.25))}catch(e){}try{navigator.vibrate&&navigator.vibrate(ok?40:[60,40,60])}catch(e){}}
 
 /* ---------- camera quét ---------- */
-let scanner=null,lastScan={code:'',t:0};
+let scanner=null,lastScan={code:'',t:0},scanCount=0;
 const scanMsg=m=>{$('#scanMsg').textContent=m};
 async function openScan(){if(!window.Html5Qrcode)return toast('Chưa tải được bộ quét mã, kiểm tra mạng');
-  $('#scanModal').hidden=false;$('#scanPicked').appendChild($('#picked'));scanMsg('Đưa mã vạch / QR vào khung');
+  $('#scanModal').hidden=false;ST.picked=null;renderPicked();scanCount=0;$('#scanCount').textContent='Quét liên tục – mỗi lần quét = +1 sticker. Chỉnh số lượng sau.';scanMsg('Đưa mã vạch / QR vào khung');
   try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:(w,h)=>({width:Math.floor(Math.min(w*.85,340)),height:Math.floor(Math.min(h*.6,180))})},
     txt=>{const now=Date.now(),c=String(txt).trim();if(c===lastScan.code&&now-lastScan.t<2500)return;lastScan={code:c,t:now};handleCode(c,true)},()=>{})}
   catch(e){toast('Không mở được camera: '+(e.message||e),4000);closeScan()}}
-async function closeScan(){$('#scanModal').hidden=true;$('#pickedHome').appendChild($('#picked'));const s=scanner;scanner=null;if(s){try{await s.stop()}catch(e){}try{s.clear()}catch(e){}}}
+async function closeScan(){$('#scanModal').hidden=true;if(scanCount)toast(`Đã thêm từ quét mã. Kiểm tra số lượng ở Danh sách in.`,3000);const s=scanner;scanner=null;if(s){try{await s.stop()}catch(e){}try{s.clear()}catch(e){}}}
 
 /* ---------- danh sách in ---------- */
 const tplById=id=>ST.templates.find(t=>t.id===id);
