@@ -346,7 +346,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
   <details class="card hsec" id="h-print"><summary><span class="ic">🖨️</span><span>Bước 4 – In sticker<small>Ngày áp dụng, khổ giấy, xếp trang, tải / chia sẻ / in</small></span></summary><div class="hbody">
     <ul>
       <li><b>Ngày áp dụng:</b> gõ 1 lần, vd <i>01/11 - 30/11</i>. Áp dụng cho tất cả sticker.</li>
-      <li><b>Khổ giấy A4 / A5:</b> app tự xoay và xếp sticker để in được nhiều nhất trên mỗi tờ.</li>
+      <li><b>Khổ giấy A4 / A5:</b> app tự xoay và xếp khít các mẫu (kể cả nhiều cỡ khác nhau) để tốn ít giấy nhất. Mẫu đúng khổ A được xếp theo kiểu chia đôi: A4 = 2 A5 = 4 A6 = 8 A7…, vd 1 A5 + 2 A6 vừa đúng 1 tờ A4, đường cắt thẳng.</li>
       <li><b>Sơ đồ trang:</b> xem trước cách xếp. Phần viền cam <b>✂ Trống</b> là giấy thừa, có thể cắt ra dùng lại (app báo luôn kích thước, vd ≈ A5).</li>
     </ul>
     <table><tr><th>Nút</th><th>Dùng khi</th></tr>
@@ -829,41 +829,62 @@ function renderSticker(t,it,pxW,cv,img){const W=pxW,H=Math.round(pxW*t.ih/t.iw);
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.drawImage(img,0,0,W,H);renderFields(ctx,t,it,W,H)}
 
 /* ---------- xếp sticker lên giấy (xếp lẫn nhiều kích thước) ---------- */
-function orientOpts(it,pref){const o=[[it.w,it.h,false],[it.h,it.w,true]];o.sort((a,b)=>pref==='wide'?(b[0]-b[1])-(a[0]-a[1]):(a[0]-a[1])-(b[0]-b[1]));return o}
-function packOnce(list,pw,ph,m,g,pref){const W=pw-2*m,H=ph-2*m,E=.01;const pages=[];
-  const items=list.map((it,i)=>({...it,i})).sort((a,b)=>(Math.max(b.w,b.h)-Math.max(a.w,a.h))||(a.i-b.i));
+/* ---------- xếp sticker: thuật toán MaxRects (xếp khít 2 chiều, tự xoay) ---------- */
+const PE=.05;
+function mrScore(f,w,h,heu){const lw=f.w-w,lh=f.h-h;switch(heu){case 'bssf':return [Math.min(lw,lh),Math.max(lw,lh)];case 'blsf':return [Math.max(lw,lh),Math.min(lw,lh)];case 'baf':return [f.w*f.h-w*h,Math.min(lw,lh)];default:return [f.y+h,f.x]}}
+function mrFind(pg,w,h,heu){let best=null;
+  for(const f of pg.free)for(const [ww,hh,rot] of [[w,h,false],[h,w,true]]){if(ww<=f.w+PE&&hh<=f.h+PE){const s=mrScore(f,ww,hh,heu);
+    if(!best||s[0]<best.s[0]-1e-6||(Math.abs(s[0]-best.s[0])<=1e-6&&(s[1]<best.s[1]-1e-6||(Math.abs(s[1]-best.s[1])<=1e-6&&!rot&&best.rot))))best={x:f.x,y:f.y,w:ww,h:hh,rot,s}}}
+  return best}
+function mrPlace(pg,r){const nf=[];
+  for(const f of pg.free){if(r.x>=f.x+f.w-PE||r.x+r.w<=f.x+PE||r.y>=f.y+f.h-PE||r.y+r.h<=f.y+PE){nf.push(f);continue}
+    if(r.x>f.x+PE)nf.push({x:f.x,y:f.y,w:r.x-f.x,h:f.h});if(r.x+r.w<f.x+f.w-PE)nf.push({x:r.x+r.w,y:f.y,w:f.x+f.w-r.x-r.w,h:f.h});
+    if(r.y>f.y+PE)nf.push({x:f.x,y:f.y,w:f.w,h:r.y-f.y});if(r.y+r.h<f.y+f.h-PE)nf.push({x:f.x,y:r.y+r.h,w:f.w,h:f.y+f.h-r.y-r.h})}
+  const inside=(a,b)=>a.x>=b.x-PE&&a.y>=b.y-PE&&a.x+a.w<=b.x+b.w+PE&&a.y+a.h<=b.y+b.h+PE;
+  pg.free=nf.filter((a,i)=>!nf.some((b,j)=>j!==i&&inside(a,b)&&(!inside(b,a)||j<i)))}
+const SORTS={area:(a,b)=>b.w*b.h-a.w*a.h,side:(a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h)||Math.min(b.w,b.h)-Math.min(a.w,a.h),short:(a,b)=>Math.min(b.w,b.h)-Math.min(a.w,a.h)||Math.max(b.w,b.h)-Math.max(a.w,a.h)};
+function packOnce(list,pw,ph,m,g,heu,sortKey){const IW=pw-2*m,IH=ph-2*m,W=IW+g,H=IH+g;const pages=[];
+  const items=list.map((it,i)=>({...it,i})).sort((a,b)=>SORTS[sortKey](a,b)||(a.i-b.i));
   for(const it0 of items){const it={...it0};
-    if(!((it.w<=W+E&&it.h<=H+E)||(it.h<=W+E&&it.w<=H+E))){const s=Math.max(Math.min(W/it.w,H/it.h),Math.min(W/it.h,H/it.w));it.w*=s;it.h*=s;it.scaled=true}
-    let placed=false;
-    for(const pg of pages){
-      for(const sh of pg.shelves){const x=sh.x+(sh.x>0?g:0);
-        for(const [w,h,rot] of [[it.w,it.h,false],[it.h,it.w,true]].sort((a,b)=>b[1]-a[1])){
-          if(h<=sh.h+E&&x+w<=W+E){pg.items.push({x,y:sh.y,w,h,rot,ref:it.ref,scaled:it.scaled});sh.x=x+w;placed=true;break}}
-        if(placed)break}
-      if(placed)break;
-      const y=pg.used+(pg.shelves.length?g:0);
-      for(const [w,h,rot] of orientOpts(it,pref)){if(w<=W+E&&y+h<=H+E){pg.shelves.push({y,h,x:w});pg.used=y+h;pg.items.push({x:0,y,w,h,rot,ref:it.ref,scaled:it.scaled});placed=true;break}}
-      if(placed)break}
-    if(!placed){const [w,h,rot]=orientOpts(it,pref).find(([w,h])=>w<=W+E&&h<=H+E);
-      pages.push({shelves:[{y:0,h,x:w}],used:h,items:[{x:0,y:0,w,h,rot,ref:it.ref,scaled:it.scaled}]})}}
-  pages.forEach(pg=>pg.items.forEach(p=>{p.x+=m;p.y+=m}));/* dồn về góc trên-trái để phần giấy trống liền một mảng */
-  return {pw,ph,pages}}
+    if(!((it.w<=IW+PE&&it.h<=IH+PE)||(it.h<=IW+PE&&it.w<=IH+PE))){const s=Math.max(Math.min(IW/it.w,IH/it.h),Math.min(IW/it.h,IH/it.w));it.w*=s;it.h*=s;it.scaled=true}
+    let pg=null,r=null;for(const p of pages){r=mrFind(p,it.w+g,it.h+g,heu);if(r){pg=p;break}}
+    if(!r){pg={free:[{x:0,y:0,w:W,h:H}],items:[]};pages.push(pg);r=mrFind(pg,it.w+g,it.h+g,heu)}
+    mrPlace(pg,r);pg.items.push({x:r.x+m,y:r.y+m,w:r.w-g,h:r.h-g,rot:r.rot,ref:it.ref,scaled:it.scaled})}
+  return {pw,ph,pages,m,g}}
+/* xếp kiểu "chia đôi khổ giấy": A4 → 2×A5 → 4×A6 … (khít tuyệt đối với mẫu khổ A, đường cắt thẳng) */
+function fitsIn(w,h,s){return (w<=s.w+PE&&h<=s.h+PE)||(h<=s.w+PE&&w<=s.h+PE)}
+function packBuddy(list,pw,ph,m,g,sortKey){const IW=pw-2*m,IH=ph-2*m,W=IW+g,H=IH+g;const pages=[];
+  const items=list.map((it,i)=>({...it,i})).sort((a,b)=>SORTS[sortKey](a,b)||(a.i-b.i));
+  for(const it0 of items){const it={...it0};
+    if(!((it.w<=IW+PE&&it.h<=IH+PE)||(it.h<=IW+PE&&it.w<=IH+PE))){const s=Math.max(Math.min(IW/it.w,IH/it.h),Math.min(IW/it.h,IH/it.w));it.w*=s;it.h*=s;it.scaled=true}
+    const w=it.w+g,h=it.h+g;let pg=null,si=-1,ba=Infinity;
+    pages.forEach(p=>p.free.forEach((s,i)=>{if(fitsIn(w,h,s)&&s.w*s.h<ba-1e-6){ba=s.w*s.h;pg=p;si=i}}));
+    if(!pg){pg={free:[{x:0,y:0,w:W,h:H}],items:[]};pages.push(pg);si=0}
+    let s=pg.free.splice(si,1)[0];
+    for(;;){const v=s.w>=s.h,a=v?{x:s.x,y:s.y,w:s.w/2,h:s.h}:{x:s.x,y:s.y,w:s.w,h:s.h/2},b=v?{x:s.x+s.w/2,y:s.y,w:s.w/2,h:s.h}:{x:s.x,y:s.y+s.h/2,w:s.w,h:s.h/2};
+      if(fitsIn(w,h,a)){pg.free.push(b);s=a}else break}
+    let best=null;for(const [ww,hh,rot] of [[w,h,false],[h,w,true]]){if(ww>s.w+PE||hh>s.h+PE)continue;
+      const opts=[[{x:s.x+ww,y:s.y,w:s.w-ww,h:s.h},{x:s.x,y:s.y+hh,w:ww,h:s.h-hh}],[{x:s.x+ww,y:s.y,w:s.w-ww,h:hh},{x:s.x,y:s.y+hh,w:s.w,h:s.h-hh}]];
+      for(const o of opts){const sc=Math.max(...o.map(r=>Math.max(0,r.w)*Math.max(0,r.h)));if(!best||sc>best.sc+1e-6||(Math.abs(sc-best.sc)<=1e-6&&!rot&&best.rot))best={ww,hh,rot,o,sc}}}
+    best.o.forEach(r=>{if(r.w>1&&r.h>1)pg.free.push(r)});
+    pg.items.push({x:s.x+m,y:s.y+m,w:best.ww-g,h:best.hh-g,rot:best.rot,ref:it.ref,scaled:it.scaled})}
+  return {pw,ph,pages,m,g}}
 /* phần giấy trống lớn nhất trên trang cuối (mm) */
-function freeRect(P){const pg=P.pages[P.pages.length-1];if(!pg)return {area:0};const bw=Math.max(...pg.items.map(p=>p.x+p.w)),bh=Math.max(...pg.items.map(p=>p.y+p.h));
-  const g=ST.settings.gap||0,bottom={x:0,y:bh+g,w:P.pw,h:P.ph-bh-g},right={x:bw+g,y:0,w:P.pw-bw-g,h:P.ph};
-  const ly=Math.max(...pg.items.map(p=>p.y)),row=pg.items.filter(p=>p.y>=ly-.5),cx=Math.max(...row.map(p=>p.x+p.w))+g,cy=Math.min(...row.map(p=>p.y));
-  const corner={x:cx,y:cy,w:P.pw-cx,h:P.ph-cy},ok=!pg.items.some(p=>p.x<corner.x+corner.w&&p.x+p.w>corner.x&&p.y<corner.y+corner.h&&p.y+p.h>corner.y);
-  const c=[{...bottom,area:bottom.w*Math.max(0,bottom.h)},{...right,area:Math.max(0,right.w)*right.h},ok?{...corner,area:Math.max(0,corner.w)*Math.max(0,corner.h)}:{area:0}];
-  return c.sort((a,b)=>b.area-a.area)[0]}
-function paperName(w,h){const a=Math.min(w,h),b=Math.max(w,h);for(const [n,x,y] of [['A5',148,210],['A6',105,148],['A7',74,105]])if(a>=x-3&&b>=y-3)return n;return ''}
+function freeRect(P){const pg=P.pages[P.pages.length-1];if(!pg||!pg.free)return {area:0};let best={area:0};
+  for(const f of pg.free){const w=Math.min(f.w-P.g,P.pw-2*P.m-f.x),h=Math.min(f.h-P.g,P.ph-2*P.m-f.y);if(w<5||h<5)continue;const a=w*h;if(a>best.area)best={x:f.x+P.m,y:f.y+P.m,w,h,area:a}}
+  return best}
+function paperName(w,h){const a=Math.min(w,h),b=Math.max(w,h);for(const [n,x,y] of [['A4',210,297],['A5',148,210],['A6',105,148],['A7',74,105],['A8',52,74]])if(a>=x-2&&b>=y-2)return n;return ''}
+function reoptLast(P,m,g){if(P.pages.length<2)return P;const lp=P.pages[P.pages.length-1],ll=lp.items.map(p=>({w:p.rot?p.h:p.w,h:p.rot?p.w:p.h,ref:p.ref}));
+  for(const sk of Object.keys(SORTS))for(const heu of ['buddy','bssf','baf','bl','blsf']){const r=heu==='buddy'?packBuddy(ll,P.pw,P.ph,m,g,sk):packOnce(ll,P.pw,P.ph,m,g,heu,sk);if(r.pages.length!==1)continue;
+    const tmp={...P,pages:[...P.pages.slice(0,-1),r.pages[0]]},f=freeRect(tmp);if(f.area>P.free.area+100){P.pages=tmp.pages;P.free=f}}
+  return P}
 function pack(list){const [A,B]=PAPERS[ST.opts.paper]||PAPERS.A4;const m=ST.settings.margin,g=ST.settings.gap;let best=null;
   if(!list.length)return {pw:A,ph:B,pages:[]};
-  for(const [pw,ph] of [[A,B],[B,A]])for(const pref of ['wide','tall']){const r=packOnce(list,pw,ph,m,g,pref);r.free=freeRect(r);
-    if(!best||r.pages.length<best.pages.length||(r.pages.length===best.pages.length&&r.free.area>best.free.area+1))best=r}
-  /* tối ưu riêng trang cuối để phần trống lớn nhất */
-  const lp=best.pages[best.pages.length-1];if(best.pages.length>1&&lp){const ll=lp.items.map(p=>({w:p.rot?p.h:p.w,h:p.rot?p.w:p.h,ref:p.ref}));
-    for(const pref of ['wide','tall']){const r=packOnce(ll,best.pw,best.ph,m,g,pref);if(r.pages.length!==1)continue;const tmp={...best,pages:[...best.pages.slice(0,-1),r.pages[0]]},f=freeRect(tmp);
-      if(f.area>best.free.area+1){best.pages=tmp.pages;best.free=f}}}
+  const better=(r,b)=>!b||r.pages.length<b.pages.length||(r.pages.length===b.pages.length&&r.free.area>b.free.area+100);/* ưu tiên giấy dọc khi tương đương */
+  for(const [pw,ph] of [[A,B],[B,A]]){let bo=null;
+    for(const sk of Object.keys(SORTS)){const rb=packBuddy(list,pw,ph,m,g,sk);rb.free=freeRect(rb);if(better(rb,bo))bo=rb;
+      for(const heu of ['bssf','baf','bl','blsf']){const r=packOnce(list,pw,ph,m,g,heu,sk);r.free=freeRect(r);if(better(r,bo))bo=r}}
+    reoptLast(bo,m,g);if(better(bo,best))best=bo}
   return best}
 function buildList(){const list=[];ST.cart.forEach((it,i)=>{const t=tplOf(it);if(!t)return;for(let q=0;q<Math.max(1,+it.qty||1);q++)list.push({w:t.wcm*10,h:t.hcm*10,ref:i})});return list}
 let lastPages=0;
@@ -875,7 +896,7 @@ function updateLayoutInfo(){const el=$('#layoutInfo');if(!el)return;lastPages=0;
   const usedW=Math.max(...last.items.map(p=>p.x+p.w)),usedH=Math.max(...last.items.map(p=>p.y+p.h));
   const fitA5=P.pages.length===1&&ST.opts.paper==='A4'&&((usedW<=148.5&&usedH<=210.5)||(usedW<=210.5&&usedH<=148.5));
   el.innerHTML=`<b>${list.length}</b> sticker → <b>${P.pages.length}</b> trang ${ST.opts.paper} ${P.pw>P.ph?'ngang':'dọc'}`+(P.pages.length>1?` (mỗi trang tối đa ${Math.max(...P.pages.map(p=>p.items.length))} sticker)`:'')+
-    (F.area>=1000?`<br>✂️ ${P.pages.length>1?'Trang cuối còn':'Còn'} trống ${F.x>0&&F.y>0?'góc dưới phải':F.y>0?'phần dưới':'phần bên phải'} ${Math.round(F.w)}×${Math.round(F.h)} mm${fn?` (≈ khổ <b>${fn}</b>)`:''} – cắt ra dùng lại được.`:'')+
+    (F.area>=1000?`<br>✂️ ${P.pages.length>1?'Trang cuối còn':'Còn'} trống ${F.x>ST.settings.margin+1&&F.y>ST.settings.margin+1?'góc dưới phải':F.y>ST.settings.margin+1?'phần dưới':'phần bên phải'} ${Math.round(F.w)}×${Math.round(F.h)} mm${fn?` (≈ khổ <b>${fn}</b>)`:''} – cắt ra dùng lại được.`:'')+
     (fitA5?'<br>💡 Cả lượt in vừa khổ A5 – có thể chọn <b>A5</b> nếu có sẵn giấy A5.':'')+
     (sc?'<br>⚠ Có sticker lớn hơn khổ giấy, sẽ thu nhỏ cho vừa.':'')+(warn?`<br>⚠ ${warn} sản phẩm có cảnh báo giá.`:'');drawViz(P)}
 function drawViz(P){const c=$('#pageViz');if(!P||!P.pages.length){c.style.display='none';return}c.style.display='block';const x=c.getContext('2d');
