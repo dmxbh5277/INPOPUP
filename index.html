@@ -226,6 +226,101 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
 @media(max-width:430px){header .ht{display:none}header .hbtn{padding:8px 11px}}
 @media(max-width:360px){.brand h1{font-size:15px}}
 </style>
+<style id="themeCss">
+/* ===== 5 GIAO DIỆN (theo house rules: màu phẳng, không gradient, không bóng khi đứng yên) ===== */
+html[data-theme="ledger"]{--font:'Be Vietnam Pro';--bg:#f4f3f1;--card:#fff;--text:#0a0a0a;--muted:#6b6b6b;--line:#e6e6e6;--soft:#eeeeee;--pri:#141414;--pri-d:#0a0a0a;--pri2:#e9e9e9;--acc:#141414;--acc-d:#141414;--ok:#2e7d32;--ok2:#dcfae5;--warn:#92400e;--warnbg:#fffbeb;--sel:#1d5fbf;--red:#c4242a;--r:8px;--r-s:6px;
+  --hdr-bg:#fff;--hdr-ink:#0a0a0a;--hdr-line:#e6e6e6;--logo-bg:#0a0a0a;--logo-ink:#fff;--cta-bg:#0a0a0a;--cta-ink:#fff;--pick-bg:#fff;--hero-bg:#0a0a0a;--hero-ink:#fff;--tint:#eef3fb;--tint-ink:#123e7f;--field:#fff;--dock-bg:#0a0a0a;--dock-acc:#fff}
+html[data-theme="sheet"]{--font:'IBM Plex Sans';--bg:#eef3f4;--card:#fff;--text:#131416;--muted:#5d5f60;--line:#e3e7e9;--soft:#f4f6f8;--pri:#1b6c80;--pri-d:#12505f;--pri2:#e6f0f2;--acc:#1b6c80;--acc-d:#12505f;--ok:#1e7b4f;--ok2:#dcfae5;--warn:#92400e;--warnbg:#fffbeb;--sel:#1b6c80;--red:#c4242a;--r:8px;--r-s:6px;
+  --hdr-bg:#eef3f4;--hdr-ink:#131416;--hdr-line:transparent;--logo-bg:#1b6c80;--logo-ink:#fff;--cta-bg:#1b6c80;--cta-ink:#fff;--pick-bg:#fff;--hero-bg:#1b6c80;--hero-ink:#fff;--tint:#e6f0f2;--tint-ink:#12505f;--field:#fff;--dock-bg:#131416;--dock-acc:#9fd6e2}
+html[data-theme="ladder"]{--font:'Plus Jakarta Sans';--bg:#f6faf8;--card:#fff;--text:#111827;--muted:#5f6672;--line:#e3e8e5;--soft:#f1f5f3;--pri:#0f7b54;--pri-d:#0b4a33;--pri2:#e6f4ed;--acc:#0f7b54;--acc-d:#0b4a33;--ok:#0f7b54;--ok2:#e6f4ed;--warn:#92400e;--warnbg:#fffbeb;--sel:#0f7b54;--red:#c4242a;--r:14px;--r-s:10px;
+  --hdr-bg:#fff;--hdr-ink:#111827;--hdr-line:#e3e8e5;--logo-bg:#0f7b54;--logo-ink:#fff;--cta-bg:#0f7b54;--cta-ink:#fff;--pick-bg:#e6f4ed;--hero-bg:#e6f4ed;--hero-ink:#0b4a33;--tint:#e6f4ed;--tint-ink:#0b4a33;--field:#fff;--dock-bg:#0b4a33;--dock-acc:#bfe8d4}
+html[data-theme="pastel"]{--font:'Manrope';--bg:#f3f5f7;--card:#fff;--text:#1b1d1f;--muted:#5c6064;--line:#e6e6e6;--soft:#f2f8fd;--pri:#1d5fd6;--pri-d:#0a3a80;--pri2:#dcf1ff;--acc:#1d5fd6;--acc-d:#0a3a80;--ok:#2f7a45;--ok2:#dcfae5;--warn:#92400e;--warnbg:#fff6dc;--sel:#1d5fd6;--red:#c41c29;--r:20px;--r-s:10px;
+  --hdr-bg:#f3f5f7;--hdr-ink:#1b1d1f;--hdr-line:transparent;--logo-bg:#ffe27a;--logo-ink:#5a4300;--cta-bg:#1d5fd6;--cta-ink:#fff;--pick-bg:#fff6dc;--hero-bg:#dcf1ff;--hero-ink:#0a3a80;--tint:#dcf1ff;--tint-ink:#0a3a80;--field:#fff;--dock-bg:#0a3a80;--dock-acc:#ffe27a}
+html[data-theme="night"]{--font:'Inter';--bg:#000;--card:#111;--text:#fff;--muted:#b4b4b4;--line:#262626;--soft:#1c1c1c;--pri:#fff;--pri-d:#fff;--pri2:#222;--acc:#ffd23f;--acc-d:#ffd23f;--ok:#8fd694;--ok2:#1d2a1e;--warn:#e5a93b;--warnbg:#2b2414;--sel:#ffd23f;--red:#e5484d;--r:20px;--r-s:12px;
+  --hdr-bg:#000;--hdr-ink:#fff;--hdr-line:#1a1a1a;--logo-bg:#ffd23f;--logo-ink:#000;--cta-bg:#fff;--cta-ink:#000;--pick-bg:#1c1c1c;--hero-bg:#111;--hero-ink:#fff;--tint:#2a2a2a;--tint-ink:#fff;--field:#1a1a1a;--dock-bg:#1c1c1c;--dock-acc:#ffd23f}
+/* --- cấu trúc chung cho 5 giao diện mới --- */
+html.flat body{font-family:var(--font),'Be Vietnam Pro',system-ui,sans-serif;background:var(--bg);background-image:none}
+html.flat header{background:var(--hdr-bg);color:var(--hdr-ink);box-shadow:none;border-bottom:1px solid var(--hdr-line)}
+html.flat .logo{background:var(--logo-bg);color:var(--logo-ink);transform:none;box-shadow:none;border-radius:var(--r-s)}
+html.flat header .badge{background:var(--soft);border-color:transparent;color:var(--text)}html.flat header .badge b{color:var(--sel)}
+html.flat header .hbtn{background:var(--cta-bg);color:var(--cta-ink);box-shadow:none}
+html.flat header .hbtn.ghost{background:transparent;color:var(--hdr-ink);border:1px solid var(--line)}
+html.flat header .hbtn.ghost.on{background:var(--soft);color:var(--text);border-color:var(--line)}
+html.flat .card{box-shadow:none;border:1px solid var(--line)}
+html.flat .btn{box-shadow:none!important}html.flat .btn.pri{background:var(--pri);color:var(--cta-ink)}
+html.flat .btn.cta{background:var(--cta-bg);color:var(--cta-ink);letter-spacing:0}
+html.flat .btn.red{background:transparent;color:var(--red);border:1px solid var(--line)}
+html.flat label.lb{text-transform:none;letter-spacing:0;font-size:13px}
+html.flat table.dt th{text-transform:none;letter-spacing:0;font-size:12.5px}
+html.flat input:focus,html.flat select:focus{box-shadow:none;border-color:var(--sel)}
+html.flat input[type=text],html.flat input[type=number],html.flat input[type=search],html.flat input[type=url],html.flat select{background:var(--field);color:var(--text);border-width:1px}
+html.flat .searchBox input{background:var(--soft)!important}html.flat .searchBox input:focus{background:var(--field)!important}
+html.flat .seg{background:var(--soft);border-width:1px}html.flat .seg button.on{background:var(--card);color:var(--text);box-shadow:none;outline:1px solid var(--line)}
+html.flat .picked{background:var(--pick-bg);box-shadow:none;border:2px solid var(--sel)}
+html.flat .it,html.flat .tl,html.flat .zcard,html.flat .tcard,html.flat .chip,html.flat .mini,html.flat .qty{background:var(--card);border-width:1px}
+html.flat .it:hover{box-shadow:none}html.flat .it.on{box-shadow:none;border-color:var(--sel);background:var(--tint)}
+html.flat .qty input{background:var(--card)!important;color:var(--text)}html.flat .qty button{background:var(--soft);color:var(--text)}
+html.flat .it .nm:focus{background:var(--field)!important}
+html.flat .tcard.sel{box-shadow:none;border-width:2px}html.flat .tcard canvas,html.flat .tl canvas{box-shadow:none;outline:1px solid var(--line)}
+html.flat .vizWrap{background:var(--soft)}html.flat #pageViz{box-shadow:none;outline:1px solid var(--line)}
+html.flat .bar i{background:var(--sel)}
+html.flat .info{background:var(--tint);color:var(--tint-ink)}
+html.flat .bulk{background:var(--tint);border:1px solid var(--sel);box-shadow:none}html.flat .bulk select{border-color:var(--line)}
+html.flat .grp{background:var(--soft)}
+html.flat .card.helpHero{background:var(--hero-bg);color:var(--hero-ink)}
+html.flat .helpHero .flow span{background:transparent;border-color:currentColor}html.flat .helpHero .flow b{color:inherit}
+html.flat .adminHead{background:var(--tint);border-color:var(--line)}
+html.flat .toc a,html.flat .hsec>summary .ic{background:var(--tint);color:var(--tint-ink)}
+html.flat .tip{background:var(--tint);border-left-color:var(--sel)}
+html.flat .num{background:var(--pri);color:var(--cta-ink);border-radius:var(--r-s)}html.flat .num.y{background:var(--sel);color:var(--cta-ink)}
+html.flat .tag{background:var(--ok2);color:var(--ok)}
+html.flat .status::before{box-shadow:none}html.flat .status.bad::before{box-shadow:none}
+html.flat .fld{background:var(--soft);border:1px solid var(--line)}
+html.flat .stage img,html.flat #prev{box-shadow:none;outline:1px solid var(--line)}
+html.flat .zfoot{background:var(--card)}
+html.flat .dock{background:var(--dock-bg)}html.flat .dock .dn b{color:var(--dock-acc)}html.flat .dock button{background:var(--dock-acc);color:var(--dock-bg)}
+html.flat .zcard .zi{background:var(--tint)}
+/* tờ giấy: khung L màu nhạt + nội dung trên tờ trắng */
+html[data-theme="sheet"] main{background:#fff;border:1px solid var(--line);border-radius:16px;margin:0 8px 8px;max-width:none}
+html[data-theme="sheet"] main>*{max-width:1180px;margin-left:auto;margin-right:auto}
+html[data-theme="sheet"] .card{border-color:var(--line)}
+/* đen tuyền */
+html[data-theme="night"] .card{border:0}
+html[data-theme="night"] .it,html[data-theme="night"] .tl,html[data-theme="night"] .zcard,html[data-theme="night"] .tcard{background:var(--soft);border-color:transparent}
+html[data-theme="night"] .tcard.sel{border-color:var(--sel)}
+html[data-theme="night"] .res:hover,html[data-theme="night"] .zcard:hover{background:#222}
+html[data-theme="night"] .btn{background:#222;color:#fff}html[data-theme="night"] .btn.pri,html[data-theme="night"] .btn.ok{background:#fff;color:#000}
+html[data-theme="night"] .btn.red{background:transparent;color:var(--red)}
+html[data-theme="night"] .red{color:var(--acc)}html[data-theme="night"] .pct{background:var(--acc);color:#000}
+html[data-theme="night"] .tcard.sel::after{color:#000}
+html[data-theme="night"] .num.y{color:#000}
+html[data-theme="night"] .it.warn{background:#2b2414;border-color:#5a4416}
+html[data-theme="night"] .modal .card,html[data-theme="night"] .mbox.card{background:#111}
+html[data-theme="night"] table.dt th{background:#1c1c1c}
+html[data-theme="night"] .chip.sel{color:#000}
+html[data-theme="night"] .toast{background:#fff;color:#000}
+/* pastel: chip & tile mềm */
+html[data-theme="pastel"] .it,html[data-theme="pastel"] .tcard,html[data-theme="pastel"] .tl{border-color:transparent;background:var(--card)}
+html[data-theme="pastel"] .it{outline:1px solid var(--line)}
+html[data-theme="pastel"] .code{background:var(--tint);color:var(--tint-ink)}
+html[data-theme="pastel"] .pct{background:#ffe1e3;color:#8a1520}
+/* bậc thang xanh lá */
+html[data-theme="ladder"] .pct{background:var(--tint);color:var(--tint-ink)}
+html[data-theme="ladder"] .btn{background:var(--tint);color:var(--tint-ink)}html[data-theme="ladder"] .btn.pri{background:var(--pri);color:#fff}
+html[data-theme="ladder"] .btn.red{background:transparent;color:var(--red)}
+/* sổ cái: không màu ở khung, chỉ dữ liệu */
+html[data-theme="ledger"] .pct{background:transparent;color:var(--red);padding:0}
+html[data-theme="ledger"] .num{background:transparent;color:var(--text);border:1px solid var(--text)}html[data-theme="ledger"] .num.y{background:var(--text);color:#fff}
+html[data-theme="ledger"] .btn{background:var(--pri2);color:var(--text)}html[data-theme="ledger"] .btn.pri{background:#0a0a0a;color:#fff}
+html[data-theme="ledger"] .btn.red{background:transparent;color:var(--red)}
+html[data-theme="ledger"] .red{color:var(--sel)}
+/* chọn giao diện */
+.thGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.thOpt{border:2px solid var(--line);border-radius:12px;padding:8px;cursor:pointer;background:var(--card);color:var(--text);text-align:left;font:inherit}
+.thOpt.on{border-color:var(--sel)}
+.thOpt .sw{display:flex;height:34px;border-radius:8px;overflow:hidden;margin-bottom:6px}.thOpt .sw i{flex:1}
+.thOpt b{display:block;font-size:13.5px}.thOpt small{color:var(--muted);font-size:12px}
+</style>
 </head>
 <body>
 <header>
@@ -415,7 +510,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
       <li>Bấm vào khung (hoặc tên trường) → chỉnh ở mục <b>Liên kết dữ liệu</b>.</li><li>Bấm <kbd>💾 LƯU MẪU</kbd>.</li></ol>
     <h4>3. Các tùy chọn của một trường</h4>
     <table>
-      <tr><td><b>Liên kết cột</b></td><td>Tên SP, Mã SP, Giá NY, Giá KM, % giảm, Số tiền giảm, Ngày áp dụng, Chữ cố định, <b>Mã QR</b> (tạo từ Mã SP)</td></tr>
+      <tr><td><b>Liên kết cột</b></td><td>Tên SP, Mã SP, Giá NY, Giá KM, % giảm, Số tiền giảm, Ngày áp dụng, Chữ cố định, <b>Công thức tự tính</b>, <b>Mã QR</b> (tạo từ Mã SP)</td></tr>
       <tr><td><b>Font / B / Màu</b></td><td>Font có sẵn: Be Vietnam Pro, Anton, Barlow Condensed, Oswald, Arial, cùng font riêng đã tải lên</td></tr>
       <tr><td><b>Căn chữ / số dòng</b></td><td>Trái, giữa, phải; tên dài cho xuống 2–3 dòng</td></tr>
       <tr><td><b>Cỡ chữ 50–200%</b></td><td>Phóng to hoặc thu nhỏ so với khung</td></tr>
@@ -424,6 +519,10 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
       <tr><td><b>Gạch ngang / dưới</b></td><td>vd gạch ngang giá niêm yết</td></tr>
       <tr><td><b>Chữ trước / sau</b></td><td>vd "Giảm " trước số, "₫" hoặc "%" sau số</td></tr></table>
     <p><kbd>+ Thêm trường</kbd> để thêm ô chữ hoặc QR. QR nên rộng từ 1,5 cm trở lên.</p>
+    <h4>Công thức tự tính</h4>
+    <p>Chọn Liên kết cột = <b>Công thức tự tính</b> rồi gõ công thức, hoặc chọn từ <b>Mẫu có sẵn</b>. Biến dùng được: <b>NY</b> (giá niêm yết), <b>KM</b> (giá khuyến mãi), <b>GIAM</b> (số tiền giảm), <b>PT</b> (% giảm); phép + − * / ( ); hàm MIN, MAX.</p>
+    <table><tr><th>Công thức</th><th>Kết quả (KM = 12.990.000)</th></tr><tr><td>KM/12</td><td>Trả góp 12 tháng: 1.082.500</td></tr><tr><td>KM*0.9</td><td>Giảm thêm 10%: 11.691.000</td></tr><tr><td>KM-500000</td><td>Giảm thêm 500 nghìn: 12.490.000</td></tr><tr><td>MAX(KM*0.95, KM-1000000)</td><td>Giảm 5% nhưng tối đa 1 triệu: 12.340.500</td></tr></table>
+    <p>Có thêm <b>Làm tròn</b> (nghìn, chục nghìn, trăm nghìn) và <b>Chữ trước / sau</b>, vd chữ trước "Chỉ ", chữ sau "₫/tháng". Ô "Thử với SP đầu danh sách" cho thấy kết quả ngay, báo ⚠ nếu công thức sai.</p>
     <h4>4. Nhân bản & áp dụng cho mẫu khác</h4>
     <ul><li><b>Nhân bản:</b> tạo bản sao → <kbd>🔄 Đổi ảnh nền</kbd> (PNG cỡ khác) → nhập kích thước → Lưu.</li>
       <li><b>📋 Áp dụng cho mẫu khác:</b> chép cài đặt trường sang các mẫu cùng thiết kế. Chọn <i>Vị trí + kiểu chữ</i> hoặc <i>Chỉ kiểu chữ</i>.</li></ul>
@@ -524,6 +623,13 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
     <div class="card"><button class="btn ok big" id="btnEdSave">💾 LƯU MẪU</button><button class="btn big" id="btnApplyOpen" style="margin-top:8px">📋 Áp dụng cho mẫu khác</button><p class="hint" id="edState" style="text-align:center"></p></div>
   </div>
 
+  <div class="card">
+    <h3>🎨 Giao diện app <span class="hint" style="margin:0;font-weight:600">(áp dụng cho mọi nhân viên)</span></h3>
+    <div class="thGrid" id="thGrid"></div>
+    <p class="hint">Bấm để xem thử ngay. Bấm <b>Lưu giao diện</b> để mọi máy dùng giao diện này.</p>
+    <button class="btn pri" id="btnSaveTheme" style="margin-top:8px">Lưu giao diện</button>
+  </div>
+
   <div class="cols2">
   <div class="card">
     <div class="row" style="margin-bottom:10px"><h3 class="grow" style="margin:0">🔤 Font chữ riêng</h3><button class="btn pri" id="btnAddFont">+ Tải font</button></div>
@@ -588,7 +694,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--pri)}
 
 <script>
 /* ======= DÁN LINK APPS SCRIPT (Web app, đuôi /exec) VÀO GIỮA 2 DẤU NHÁY ======= */
-const API_URL = 'https://script.google.com/macros/s/AKfycbwoTEY7i7qyyRCeV9tvS0KkwfVc2K7ezuMVz5c8t-0VZ8BwYXRmP7eeL-lH2u5nz9r-ig/exec';
+const API_URL = '';
 /* =============================================================================== */
 
 const $=s=>document.querySelector(s);
@@ -605,10 +711,10 @@ const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform===
 const isAndroid=/Android/i.test(navigator.userAgent);
 
 /* ---------- cấu hình trường ---------- */
-const SRC=[['name','Tên SP'],['code','Mã SP'],['ny','Giá niêm yết'],['km','Giá khuyến mãi'],['pct','% giảm (tự tính)'],['save','Số tiền giảm (tự tính)'],['date','Ngày áp dụng'],['text','Chữ cố định'],['qr','Mã QR (từ Mã SP)']];
-const SRCL=Object.fromEntries(SRC);const NUMSRC=['ny','km','save'];
+const SRC=[['name','Tên SP'],['code','Mã SP'],['ny','Giá niêm yết'],['km','Giá khuyến mãi'],['pct','% giảm (tự tính)'],['save','Số tiền giảm (tự tính)'],['date','Ngày áp dụng'],['text','Chữ cố định'],['calc','Công thức tự tính'],['qr','Mã QR (từ Mã SP)']];
+const SRCL=Object.fromEntries(SRC);const NUMSRC=['ny','km','save','calc'];
 const FONTS={'Be Vietnam Pro':[500,800],'Anton':[400,400],'Barlow Condensed':[600,800],'Oswald':[500,700],'Arial':[400,700]};
-const FDEF={on:true,color:'#111111',bold:false,align:'center',lines:1,strike:false,underline:false,prefix:'',suffix:'',font:'Be Vietnam Pro',num:'full',text:'',fit:'auto',scale:100};
+const FDEF={on:true,color:'#111111',bold:false,align:'center',lines:1,strike:false,underline:false,prefix:'',suffix:'',font:'Be Vietnam Pro',num:'full',text:'',formula:'',round:'1',fit:'auto',scale:100};
 const FIELDS=[
   {k:'name',def:{x:.06,y:.05,w:.88,h:.2,bold:true,lines:2}},
   {k:'ny',def:{x:.06,y:.29,w:.52,h:.1,color:'#555555',strike:true,align:'left',suffix:'₫'}},
@@ -664,7 +770,7 @@ async function getTplImage(t){if(!t.imgId)return null;const key='img_'+t.imgId;c
   try{const j=await apiGet({action:'img',id:t.imgId});await IDB.set(key,j.data);return j.data}catch(e){return null}}
 function applyData(products,templates,settings,sheetUrl){
   ST.products=products||[];ST.templates=(templates||[]).map(fixTpl);
-  const s=settings||{};ST.settings={margin:Math.max(0,+(s.margin??0)||0),gap:Math.max(0,+(s.gap??0)||0),cut:String(s.cut??'true').toLowerCase()!=='false',dpi:[300,400,600].includes(+s.dpi)?+s.dpi:400};
+  const s=settings||{};ST.settings={margin:Math.max(0,+(s.margin??0)||0),gap:Math.max(0,+(s.gap??0)||0),cut:String(s.cut??'true').toLowerCase()!=='false',dpi:[300,400,600].includes(+s.dpi)?+s.dpi:400,theme:s.theme||''};if(!themePreview&&!new URLSearchParams(location.search).get('theme')){const th=ST.settings.theme||LS.get('theme','classic');LS.set('theme',th);applyTheme(th)}
   ST.sheetUrl=sheetUrl||'';if(!ST.templates.find(t=>t.id===ST.opts.tpl))ST.opts.tpl=ST.templates[0]?.id||null}
 async function loadCache(){const c=await IDB.get('cache');if(!c)return false;const tpls=[];await loadFonts(c.fonts);
   for(const t of c.templates||[]){t.img=await IDB.get('img_'+t.imgId);if(t.img)tpls.push(t)}
@@ -886,10 +992,18 @@ async function fontsReady(t){const need=new Set();Object.values((t||{}).fields||
 const imgCache={};
 const loadImg=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
 async function getImg(t){const c=imgCache[t.id];if(c&&c.src===t.img)return c.img;const img=await loadImg(t.img);imgCache[t.id]={src:t.img,img};return img}
+/* công thức tự tính: biến NY, KM, GIAM, PT; phép + - * / ( ); hàm MIN, MAX */
+const CALC_PRESETS=[['','— Chọn công thức mẫu —'],['KM/12','Trả góp 12 tháng (KM/12)'],['KM/6','Trả góp 6 tháng (KM/6)'],['KM*0.9','Giảm thêm 10% (KM×0.9)'],['KM-500000','Giảm thêm 500.000 (KM−500000)'],['NY-KM','Tiết kiệm (NY−KM)'],['KM/30','Mỗi ngày chỉ (KM/30)']];
+function calcValue(f,it){f=String(f||'').toUpperCase().replace(/\s+/g,'').replace(/;/g,',');if(!/MIN|MAX/.test(f))f=f.replace(/,/g,'.');f=f.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');if(!f)return null;
+  const ny=toNum(it.ny),km=toNum(it.km),V={NY:ny,KM:km,GIAM:ny>km&&km?ny-km:0,PT:calcPct(it)};
+  if(!/^[0-9A-Z+\-*/().,]*$/.test(f))return null;let ok=true;
+  const ex=f.replace(/[A-Z]+/g,w=>{if(w in V)return '('+V[w]+')';if(w==='MIN'||w==='MAX')return 'Math.'+w.toLowerCase();ok=false;return ''});
+  if(!ok)return null;try{const r=Function('"use strict";return ('+ex+')')();return isFinite(r)?r:null}catch(e){return null}}
 function fieldText(c,it){const ny=toNum(it.ny),km=toNum(it.km);let v='';
   switch(c.src){case 'name':v=it.name||'';break;case 'code':v=it.code||'';break;case 'ny':v=fmtN(ny,c.num);break;case 'km':v=fmtN(km,c.num);break;
     case 'pct':{const p=calcPct(it);v=p>0?String(p):'';break}case 'save':v=ny>km&&km>0?fmtN(ny-km,c.num):'';break;
-    case 'date':v=ST.opts.date||'';break;case 'text':v=c.text||'';break}
+    case 'date':v=ST.opts.date||'';break;case 'text':v=c.text||'';break;
+    case 'calc':{const r=calcValue(c.formula,it);if(r!==null&&r!==0){const st=+c.round||1,n=Math.round(r/st)*st;v=(n<0?'-':'')+fmtN(Math.abs(n),c.num)}break}}
   return v?(c.prefix||'')+v+(c.suffix||''):''}
 function wrap(ctx,t,maxW,maxL){const words=String(t).split(/\s+/).filter(Boolean);const out=[];let cur='';
   for(const w of words){if(ctx.measureText(w).width>maxW)return null;const test=cur?cur+' '+w:w;
@@ -993,7 +1107,7 @@ function updateLayoutInfo(){const el=$('#layoutInfo');if(!el)return;lastPages=0;
     (fitA5?'<br>💡 Cả lượt in vừa khổ A5 – có thể chọn <b>A5</b> nếu có sẵn giấy A5.':'')+
     (sc?'<br>⚠ Có sticker lớn hơn khổ giấy, sẽ thu nhỏ cho vừa.':'')+(warn?`<br>⚠ ${warn} sản phẩm có cảnh báo giá.`:'');drawViz(P)}
 function drawViz(P){const c=$('#pageViz');if(!P||!P.pages.length){c.style.display='none';return}c.style.display='block';const x=c.getContext('2d');
-  const k=200/Math.max(P.pw,P.ph);c.width=Math.round(P.pw*k);c.height=Math.round(P.ph*k);x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.fillStyle='#cfe0ff';x.strokeStyle='#1a5fd6';
+  const k=200/Math.max(P.pw,P.ph);c.width=Math.round(P.pw*k);c.height=Math.round(P.ph*k);x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);const cs=getComputedStyle(document.documentElement),flat=document.documentElement.classList.contains('flat');x.fillStyle=flat?cs.getPropertyValue('--tint').trim():'#cfe0ff';x.strokeStyle=flat?cs.getPropertyValue('--sel').trim():'#1a5fd6';
   const pg=P.pages[P.pages.length-1];pg.items.forEach(p=>{x.fillRect(p.x*k,p.y*k,p.w*k,p.h*k);x.strokeRect(p.x*k+.5,p.y*k+.5,p.w*k-1,p.h*k-1)});
   const F=P.free;if(F&&F.area>=1000){x.save();x.setLineDash([4,3]);x.strokeStyle='#e67700';x.strokeRect(F.x*k+1,F.y*k+1,F.w*k-2,F.h*k-2);x.restore();
     x.fillStyle='#9aa3b2';x.font='600 12px "Be Vietnam Pro",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('✂ Trống',(F.x+F.w/2)*k,(F.y+F.h/2)*k)}
@@ -1082,6 +1196,10 @@ function renderFieldPanel(){if(!draft)return;if(!draft.fields[selField])selField
    <div class="row"><label class="chk"><input type="checkbox" data-p="on" ${c.on?'checked':''}> Hiện</label><input type="text" data-p="label" class="grow" value="${esc(c.label)}" placeholder="Tên trường"></div>
    <div class="row"><label class="lb">Liên kết cột</label><select data-p="src" class="grow">${SRC.map(([v,l])=>opt(v,l,c.src)).join('')}</select></div>
    ${c.src==='text'?`<div class="row"><label class="lb">Nội dung</label><input type="text" class="grow" data-p="text" value="${esc(c.text)}"></div>`:''}
+   ${c.src==='calc'?`<div class="row"><label class="lb">Công thức</label><input type="text" class="grow" data-p="formula" value="${esc(c.formula)}" placeholder="VD: KM/12" autocapitalize="characters"></div>
+   <div class="row"><label class="lb">Mẫu có sẵn</label><select data-p="preset" class="grow">${CALC_PRESETS.map(([v,l])=>opt(v,l,'')).join('')}</select></div>
+   <div class="row"><label class="lb">Làm tròn</label><select data-p="round" class="grow">${[['1','Không làm tròn'],['1000','Tròn nghìn'],['10000','Tròn chục nghìn'],['100000','Tròn trăm nghìn']].map(([v,l])=>opt(v,l,c.round)).join('')}</select></div>
+   <p class="hint" style="margin:0">Dùng: <b>NY</b> giá niêm yết · <b>KM</b> giá khuyến mãi · <b>GIAM</b> số tiền giảm · <b>PT</b> % giảm · phép <b>+ − * / ( )</b> · hàm <b>MIN( , )</b> <b>MAX( , )</b>.<br>Thử với SP đầu danh sách: <b id="calcTry">${(()=>{const r=calcValue(c.formula,previewItem());return c.formula?(r===null?'⚠ công thức sai':fmt(Math.round(r/(+c.round||1))*(+c.round||1))||'0'):'—'})()}</b></p>`:''}
    ${c.src==='qr'?`<div class="row"><label class="lb">Màu / Căn</label><input type="color" data-p="color" value="${c.color||'#000000'}"><select data-p="align">${[['left','Trái'],['center','Giữa'],['right','Phải']].map(([v,l])=>opt(v,l,c.align)).join('')}</select></div>
    <div class="row"><label class="lb">Kích thước</label><input type="range" data-p="scale" min="50" max="100" step="5" value="${Math.min(100,c.scale||100)}" class="grow"><b id="scaleVal" style="min-width:44px;text-align:right">${Math.min(100,c.scale||100)}%</b></div>
    <p class="hint" style="margin:0">QR tạo từ Mã SP, luôn vuông theo cạnh ngắn của khung. Nên để QR rộng từ 1,5 cm trở lên để dễ quét.</p>
@@ -1123,7 +1241,7 @@ $('#btnTorch').onclick=async e=>{const on=!e.target.classList.contains('on');try
 $('#btnCamSw').onclick=async()=>{if(cam.devs.length<2)return;const cur=cam.track&&cam.track.getSettings?cam.track.getSettings().deviceId:'';const i=cam.devs.findIndex(d=>d.deviceId===cur);
   cam.devId=cam.devs[(i+1)%cam.devs.length].deviceId;stopCam();try{await startCam();cam.n=0;scanTick();toast(cam.devs.find(d=>d.deviceId===cam.devId)?.label||'Đã đổi camera')}catch(e){toast('Không đổi được camera')}};
 /* tải trước bộ đọc mã cho iPhone để lần quét đầu nhanh */
-setTimeout(()=>{try{if(!('BarcodeDetector' in window)&&window.BarcodeDetectionAPI)BarcodeDetectionAPI.prepareZXingModule({fireImmediately:true})}catch(e){}},2500);
+setTimeout(()=>{try{if(!('BarcodeDetector' in window)&&window.BarcodeDetectionAPI)Promise.resolve(BarcodeDetectionAPI.prepareZXingModule({fireImmediately:true})).catch(()=>{})}catch(e){}},2500);
 document.querySelectorAll('.scanSeg').forEach(s=>s.addEventListener('click',e=>{const b=e.target.closest('button');if(b)setScanMode(b.dataset.v)}));$('#btnCloseScan').onclick=closeScan;
 $('#btnManualOpen').onclick=()=>{$('#manualModal').hidden=false;$('#mCode').value=$('#q').value.trim();setTimeout(()=>$('#mName').focus(),50)};
 $('#btnManualClose').onclick=()=>{$('#manualModal').hidden=true};
@@ -1215,8 +1333,10 @@ const fp=$('#fields');
 function fpUpdate(e){const row=e.target.closest('.fld'),p=e.target.dataset.p;if(!row||!p||p==='bold')return;const c=draft.fields[row.dataset.k];
   if(p==='on'||p==='strike'||p==='underline')c[p]=e.target.checked;else if(p==='lines')c.lines=+e.target.value;
   else if(p==='scale'){c.scale=+e.target.value;$('#scaleVal').textContent=c.scale+'%'}
+  else if(p==='preset'){if(e.type!=='change'||!e.target.value)return;c.formula=e.target.value;if(['Công thức tự tính','Trường mới',''].includes(c.label)||CALC_PRESETS.some(p=>p[1].replace(/\s*\(.*\)$/,'')===c.label))c.label=e.target.selectedOptions[0].text.replace(/\s*\(.*\)$/,'');markDirty();renderBoxes();renderFieldPanel();renderPreview();return}
   else if(p==='src'){if(e.type!=='change')return;if(c.label===srcLabel(c.src))c.label=srcLabel(e.target.value);c.src=e.target.value;if(c.src==='qr'){const s=Math.min(c.w*draft.iw,c.h*draft.ih,draft.ih*.35);c.w=s/draft.iw;c.h=s/draft.ih;c.x=Math.min(c.x,1-c.w);c.y=Math.min(c.y,1-c.h);c.scale=100}}else c[p]=e.target.value;
   markDirty();if(p==='label'){renderBoxes();const ch=$('#fchips').querySelector(`[data-k="${row.dataset.k}"]`);if(ch)ch.textContent=c.label}
+  if(p==='formula'||p==='round'){const t=$('#calcTry');if(t){const r=calcValue(c.formula,previewItem()),st=+c.round||1;t.textContent=c.formula?(r===null?'⚠ công thức sai':fmt(Math.round(r/st)*st)||'0'):'—'}}
   if((p==='on'||p==='src')&&e.type==='change'){renderBoxes();renderFieldPanel()}renderPreview()}
 fp.addEventListener('input',fpUpdate);fp.addEventListener('change',fpUpdate);
 fp.addEventListener('click',e=>{if(!draft)return;const c=draft.fields[selField];
@@ -1246,8 +1366,25 @@ $('#btnSaveSet').onclick=async()=>{const s={margin:Math.max(0,+$('#sMargin').val
   try{await apiPost({action:'saveSettings',settings:{margin:s.margin,gap:s.gap,cut:s.cut?'TRUE':'FALSE',dpi:s.dpi}});ST.settings=s;cacheNow();updateLayoutInfo();toast('Đã lưu cài đặt in')}catch(e){toast('Lỗi: '+e.message,4000)}};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 
+/* ---------- GIAO DIỆN ---------- */
+const THEMES=[
+  {id:'classic',name:'Gốc (hiện tại)',d:'Xanh dương + vàng',sw:['#0b5ed7','#ffd400','#eef2f8','#fff']},
+  {id:'ledger',name:'1 · Sổ cái',d:'Trắng đen tối giản',sw:['#0a0a0a','#f4f3f1','#fff','#1d5fbf'],font:'Be Vietnam Pro'},
+  {id:'sheet',name:'2 · Tờ giấy',d:'Khung xám, tờ trắng',sw:['#eef3f4','#fff','#1b6c80','#131416'],font:'IBM Plex Sans'},
+  {id:'ladder',name:'3 · Xanh lá',d:'Một màu, sắc nhạt',sw:['#0f7b54','#e6f4ed','#f6faf8','#111827'],font:'Plus Jakarta Sans'},
+  {id:'pastel',name:'4 · Pastel',d:'Bo tròn, dịu mắt',sw:['#1d5fd6','#dcf1ff','#fff6dc','#f3f5f7'],font:'Manrope'},
+  {id:'night',name:'5 · Đen tuyền',d:'Nền đen, điểm vàng',sw:['#000','#111','#ffd23f','#fff'],font:'Inter'}];
+let themePreview=null;
+function applyTheme(id){setTimeout(()=>{try{updateLayoutInfo()}catch(e){}},50);const t=THEMES.find(x=>x.id===id)||THEMES[0];document.documentElement.dataset.theme=t.id;document.documentElement.classList.toggle('flat',t.id!=='classic');
+  if(t.font&&!document.getElementById('fnt-'+t.id)){const l=document.createElement('link');l.id='fnt-'+t.id;l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(t.font).replace(/%20/g,'+')+':wght@400;500;600;700;800&display=swap';document.head.appendChild(l)}
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(document.documentElement).getPropertyValue('--hdr-bg')||'#0b5ed7';renderThemes()}
+function renderThemes(){const g=$('#thGrid');if(!g)return;const cur=document.documentElement.dataset.theme||'classic';
+  g.innerHTML=THEMES.map(t=>`<button class="thOpt ${t.id===cur?'on':''}" data-th="${t.id}"><span class="sw">${t.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</span><b>${t.name}</b><small>${t.d}</small></button>`).join('')}
+$('#thGrid').addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(b){themePreview=b.dataset.th;applyTheme(themePreview)}});
+$('#btnSaveTheme').onclick=async()=>{const id=document.documentElement.dataset.theme||'classic';try{await apiPost({action:'saveSettings',settings:{theme:id}});ST.settings.theme=id;cacheNow();LS.set('theme',id);toast('Đã lưu giao diện cho mọi máy')}catch(e){toast('Lỗi: '+e.message,4000)}};
+
 /* ---------- khởi động ---------- */
-(async()=>{try{await IDB.open()}catch(e){}
+(async()=>{applyTheme(new URLSearchParams(location.search).get('theme')||LS.get('theme','classic'));try{await IDB.open()}catch(e){}
   const qp=new URLSearchParams(location.search).get('api');if(qp)LS.set('api',qp);
   ST.api=LS.get('api','');ST.cart=LS.get('cart',[]);ST.batches=LS.get('batches',[]);Object.assign(ST.opts,LS.get('opts',{}));
   $('#oDate').value=ST.opts.date||'';setScanMode(ST.opts.scanMode);$('#paperSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===ST.opts.paper));
