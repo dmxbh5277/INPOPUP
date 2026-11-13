@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>In tem Tomy</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#e9edf2;color:#1b2430}
+  .app{display:flex;gap:16px;padding:16px;align-items:flex-start}
+  .panel{width:380px;flex:none;background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.15);position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+  h1{font-size:17px;margin:0 0 8px}
+  h2{font-size:13px;margin:14px 0 6px;color:#0a5bd3;text-transform:uppercase;letter-spacing:.4px}
+  label{display:block;font-size:12.5px;margin:6px 0 2px}
+  input,select,textarea{width:100%;padding:6px 8px;border:1px solid #c5ccd6;border-radius:6px;font-size:13px;font-family:inherit}
+  textarea{height:80px;resize:vertical}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .chk{display:flex;align-items:center;gap:6px;font-size:13px;margin:6px 0}
+  .chk input{width:auto}
+  button{padding:9px 12px;border:0;border-radius:6px;font-size:14px;cursor:pointer;background:#0a5bd3;color:#fff;font-weight:600}
+  button.sec{background:#e3e8ef;color:#1b2430}
+  button.sm{padding:5px 9px;font-size:13px}
+  .btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .btns button{flex:1}
+  .note{font-size:12px;color:#5a6676;margin-top:6px;line-height:1.4}
+  table{width:100%;border-collapse:collapse}
+  td,th{padding:2px 3px;font-size:12px;text-align:left}
+  td input{padding:5px 6px}
+  td.q{width:58px} td.x{width:34px}
+  .datebig{font-size:15px;font-weight:700}
+  .preview{flex:1;display:flex;flex-direction:column;gap:16px;align-items:center;overflow:auto}
+  .page{background:#fff;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.25);flex:none;overflow:hidden}
+  .lb{position:absolute;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.12;font-weight:700;color:#000}
+  .lb .in{width:100%;padding:0 1.2mm}
+  .lb .l1{font-weight:700}
+  .lb .l2{font-weight:700}
+  .lb .l3{font-weight:600}
+  .lb .num{position:absolute;left:0;right:0;bottom:.6mm;font-size:6.5px;font-weight:400;color:#8a93a0;line-height:1}
+  .guide .lb{outline:.2mm dashed #b9c2cf}
+  .guide .lb.pick{cursor:pointer}
+  .guide .lb.pick:hover{outline:.4mm solid #0a5bd3;background:#e8f0ff}
+  .guide .lb.skip{background:repeating-linear-gradient(45deg,#ececec,#ececec 1mm,#fff 1mm,#fff 2mm)}
+  .guide .lb.first{outline:.5mm solid #e8590c}
+  .lb.border{outline:.25mm solid #000}
+  details{border:1px solid #d5dbe4;border-radius:8px;padding:8px 10px;margin:10px 0}
+  summary{cursor:pointer;font-size:13px;font-weight:600;color:#0a5bd3}
+  .saverow{display:grid;grid-template-columns:1fr auto;gap:8px}
+  #pages{display:flex;flex-direction:column;gap:16px;align-items:center;width:100%}
+  .pwrap{position:relative;flex:none}
+  .page{transform-origin:0 0}
+  .pvinfo{font-size:12.5px;color:#3b4757;background:#fff;border-radius:8px;padding:8px 12px;width:100%;max-width:760px}
+  .tabs{display:none}
+  .actionbar{position:fixed;left:16px;bottom:16px;width:380px;display:flex;gap:8px;background:#fff;padding:10px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:30}
+  .actionbar button{flex:1}
+  .panel{max-height:calc(100vh - 100px)}
+  @media(max-width:900px){
+    .tabs{display:flex;position:sticky;top:0;z-index:40;background:#e9edf2;gap:6px;padding:8px 10px}
+    .tabs button{flex:1;background:#fff;color:#1b2430;min-height:44px}
+    .tabs button.on{background:#0a5bd3;color:#fff}
+    .app{display:block;padding:8px 10px 96px}
+    .panel{width:100%;position:static;max-height:none;padding:12px}
+    body:not(.show-preview) .preview{display:none}
+    body.show-preview .panel{display:none}
+    .preview{width:100%}
+    input,select,textarea{font-size:16px;padding:9px 10px}
+    button{min-height:44px}
+    td input{padding:8px 6px}
+    td.q{width:64px}
+    .actionbar{left:0;right:0;bottom:0;width:auto;border-radius:0;padding:8px 10px}
+  }
+  .pn{position:absolute;right:2mm;bottom:1mm;font-size:8px;color:#999}
+  @media print{
+    body{background:#fff}
+    .panel,.pn,.lb .num,.tabs,.actionbar,.pvinfo{display:none!important}
+    .app{display:block;padding:0}
+    .preview{display:block!important;gap:0;overflow:visible;width:auto}
+    #pages{display:block}
+    .pwrap{width:auto!important;height:auto!important;page-break-after:always;break-after:page}
+    .pwrap:last-child{page-break-after:auto;break-after:auto}
+    .page{box-shadow:none;margin:0;transform:none!important}
+    .guide .lb{outline:none!important;background:none!important}
+    .lb.border{outline:.25mm solid #000!important}
+  }
+</style>
+<style id="pageStyle"></style>
+</head>
+<body>
+<div class="tabs"><button id="tabIn" class="on">✏️ Nhập liệu</button><button id="tabPv">👁 Xem trước</button></div>
+<div class="app">
+  <div class="panel">
+    <h1>In tem Tomy</h1>
+
+    <h2>1. Nội dung tem</h2>
+    <label>Ngày (hiện dạng dd/mm/yy)</label>
+    <div class="row">
+      <input type="date" id="date">
+      <input type="text" id="dateTxt" class="datebig" readonly>
+    </div>
+    <div class="chk"><input type="checkbox" id="showDate" checked><span>In dòng Ngày</span></div>
+
+    <label style="margin-top:10px"><b>Danh sách tem</b> (Text 1 = Màu, Text 2 = Dung lượng)</label>
+    <table>
+      <thead><tr><th>Text 1: Màu</th><th>Text 2: Dung lượng</th><th class="q">SL</th><th class="x"></th></tr></thead>
+      <tbody id="rowsBody"></tbody>
+    </table>
+    <div class="btns"><button class="sec sm" id="addRow">+ Thêm dòng</button><button class="sec sm" id="clearRows">Xóa hết</button></div>
+
+    <datalist id="dlColor"><option value="Trắng"><option value="Đen"><option value="Xanh"><option value="Xanh dương"><option value="Xanh lá"><option value="Đỏ"><option value="Vàng"><option value="Hồng"><option value="Tím"><option value="Xám"><option value="Bạc"><option value="Vàng đồng"><option value="Titan"></datalist>
+    <datalist id="dlCap"><option value="4GB/64GB"><option value="4GB/128GB"><option value="6GB/64GB"><option value="6GB/128GB"><option value="8GB/128GB"><option value="8GB/256GB"><option value="12GB/256GB"><option value="12GB/512GB"></datalist>
+
+    <label>Hoặc dán từ Excel (cột Màu, Dung lượng, SL) rồi bấm Thêm</label>
+    <textarea id="paste" placeholder="Trắng&#9;4GB/128GB&#9;5"></textarea>
+    <div class="btns"><button class="sec sm" id="addPaste">Thêm từ ô dán</button></div>
+
+    <div class="chk"><input type="checkbox" id="fillAll"><span>Lặp danh sách cho đến hết tờ</span></div>
+
+    <div class="row3">
+      <div><label>Cỡ Ngày (pt)</label><input type="number" id="fs1" value="8" step="0.5"></div>
+      <div><label>Cỡ Màu (pt)</label><input type="number" id="fs2" value="10" step="0.5"></div>
+      <div><label>Cỡ Dung lượng</label><input type="number" id="fs3" value="8" step="0.5"></div>
+    </div>
+    <div class="row">
+      <div><label>Màu chữ</label><input type="color" id="color" value="#000000"></div>
+      <div><label>Màu nền tem</label><input type="color" id="bg" value="#ffffff"></div>
+    </div>
+    <div class="chk"><input type="checkbox" id="useBg"><span>In màu nền tem</span></div>
+    <div class="chk"><input type="checkbox" id="border"><span>In viền tròn quanh tem</span></div>
+
+    <h2>2. Chọn tem bắt đầu in</h2>
+    <div class="row">
+      <div><label>Bắt đầu từ tem số</label><input type="number" id="start" value="1" min="1"></div>
+      <div><label>&nbsp;</label><button class="sec" id="start1">Về tem 1</button></div>
+    </div>
+    <div class="note">👉 Trên khung xem trước, <b>mỗi tem có số thứ tự</b> (đếm từ trái sang phải, từ trên xuống). <b>Bấm trực tiếp vào tem</b> ở tờ 1 để chọn tem bắt đầu. Tem bị sọc xám = đã dùng, bỏ qua. Viền cam = tem đầu tiên sẽ in. Số thứ tự chỉ hiện trên màn hình, <b>không in ra</b>.</div>
+
+    <h2>3. Loại tem Tomy</h2>
+    <label>Mẫu tem</label>
+    <select id="preset"></select>
+    <label>Lưu cấu hình hiện tại thành mẫu của tôi</label>
+    <div class="saverow">
+      <input type="text" id="presetName" placeholder="Đặt tên, vd: Tomy 103">
+      <button id="savePreset" class="sm">💾 Lưu</button>
+    </div>
+    <div class="btns"><button class="sec sm" id="delPreset" style="display:none">🗑 Xóa mẫu này</button></div>
+
+    <details id="geo">
+      <summary>⚙️ Kích thước chi tiết (bấm để mở / sửa)</summary>
+      <div class="row">
+        <div><label>Khổ giấy tem</label>
+          <select id="paper">
+            <option value="210,148">A5 ngang (210×148)</option>
+            <option value="148,210">A5 dọc (148×210)</option>
+            <option value="297,210">A4 ngang (297×210)</option>
+            <option value="210,297">A4 dọc (210×297)</option>
+            <option value="custom">Tùy chỉnh (nhập bên dưới)</option>
+          </select></div>
+        <div><label>Hình dạng tem</label>
+          <select id="shape"><option value="round">Tròn</option><option value="rect">Chữ nhật bo góc</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>Rộng giấy (mm)</label><input type="number" inputmode="decimal" id="pw" value="206" step="0.5"></div>
+        <div><label>Cao giấy (mm)</label><input type="number" inputmode="decimal" id="ph" value="164" step="0.5"></div>
+      </div>
+      <div class="row3">
+        <div><label>Rộng tem (mm)</label><input type="number" inputmode="decimal" id="lw" value="23" step="0.1"></div>
+        <div><label>Cao tem (mm)</label><input type="number" inputmode="decimal" id="lh" value="23" step="0.1"></div>
+        <div><label>Bo góc (mm)</label><input type="number" inputmode="decimal" id="rad" value="0" step="0.5"></div>
+      </div>
+      <div class="row">
+        <div><label>Số cột</label><input type="number" inputmode="numeric" id="cols" value="8"></div>
+        <div><label>Số hàng</label><input type="number" inputmode="numeric" id="rows" value="6"></div>
+      </div>
+      <div class="row">
+        <div><label>Bước ngang (tâm→tâm, mm)</label><input type="number" inputmode="decimal" id="px" value="25" step="0.1"></div>
+        <div><label>Bước dọc (tâm→tâm, mm)</label><input type="number" inputmode="decimal" id="py" value="25" step="0.1"></div>
+      </div>
+      <div class="row">
+        <div><label>Lề trái → mép tem đầu (mm)</label><input type="number" inputmode="decimal" id="ml" value="4" step="0.1"></div>
+        <div><label>Lề trên → mép tem đầu (mm)</label><input type="number" inputmode="decimal" id="mt" value="6" step="0.1"></div>
+      </div>
+      <div class="row">
+        <div><label>Dịch ngang khi in (mm)</label><input type="number" inputmode="decimal" id="ox" value="0" step="0.1"></div>
+        <div><label>Dịch dọc khi in (mm)</label><input type="number" inputmode="decimal" id="oy" value="0" step="0.1"></div>
+      </div>
+      <label>Khổ giấy đưa vào máy in</label>
+      <select id="outPaper">
+        <option value="same">Đúng khổ tờ tem (giấy tùy chỉnh)</option>
+        <option value="297,210">A4 ngang (297×210)</option>
+        <option value="210,297">A4 dọc (210×297)</option>
+        <option value="210,148">A5 ngang (210×148)</option>
+        <option value="148,210">A5 dọc (148×210)</option>
+      </select>
+      <div class="btns"><button class="sec" id="center">Tự căn giữa lề</button></div>
+    </details>
+
+    <div class="chk"><input type="checkbox" id="guide" checked><span>Hiện số thứ tự & đường gióng (chỉ trên màn hình)</span></div>
+    <div class="note">Mẫu lưu gồm cả kích thước tem và <b>cỡ chữ mặc định</b> (Ngày/Màu/Dung lượng). Khi dùng vẫn chỉnh cỡ chữ tự do ở mục 1 mà không đổi mẫu; chữ tự thu nhỏ nếu dài quá tem. Lưu mẫu: chỉnh xong kích thước → gõ tên → bấm <b>💾 Lưu</b>. Mẫu của bạn sẽ nằm trong danh sách "Mẫu của tôi" (lưu trên thiết bị/trình duyệt đang dùng). Gõ trùng tên = cập nhật mẫu cũ.</div>
+    <div class="note">Khi in: <b>Tỉ lệ 100% (Actual size)</b>, lề <b>None</b>, tắt "Fit to page". Lệch tem thì bấm <b>Tờ canh chỉnh</b>, in giấy thường, đặt chồng lên tờ tem thật soi dưới đèn rồi chỉnh "Dịch ngang/dọc". Trên điện thoại: bấm In → chọn máy in hoặc Lưu PDF.</div>
+    <div class="note" id="info"></div>
+  </div>
+  <div class="preview" id="preview">
+    <div class="pvinfo" id="pvinfo"></div>
+    <div id="pages"></div>
+  </div>
+</div>
+
+<div class="actionbar">
+  <button id="print">🖨️ In</button>
+  <button class="sec" id="calib">Tờ canh chỉnh</button>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const FIELDS = ["date","showDate","fillAll","fs1","fs2","fs3","color","bg","useBg","border","outPaper","preset","paper","shape","pw","ph","lw","lh","rad","cols","rows","px","py","ml","mt","ox","oy","start","guide"];
+let calibMode = false;
+let rowsData = [{c:"Trắng",s:"4GB/128GB",q:5},{c:"Đen",s:"6GB/128GB",q:5}];
+
+const num = id => parseFloat($(id).value)||0;
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+
+function todayISO(){const t=new Date();return `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;}
+function fmtDate(){
+  const v=$("date").value; if(!v) return "";
+  const [y,m,d]=v.split("-");
+  return `${d}/${m}/${y.slice(-2)}`;
+}
+
+function save(){
+  try{
+    const o={rowsData};
+    FIELDS.forEach(f=>{const e=$(f);o[f]=e.type==="checkbox"?e.checked:e.value});
+    localStorage.setItem("tomy_v5",JSON.stringify(o));
+  }catch(e){}
+}
+function load(){
+  $("date").value=todayISO();
+  try{
+    const o=JSON.parse(localStorage.getItem("tomy_v5")||"null"); if(!o) return;
+    FIELDS.forEach(f=>{ if(f==="date") return; if(f in o){const e=$(f); if(e.type==="checkbox") e.checked=o[f]; else e.value=o[f];} });
+    if(Array.isArray(o.rowsData)&&o.rowsData.length) rowsData=o.rowsData;
+  }catch(e){}
+}
+
+function paperWH(){
+  const v=$("paper").value;
+  return v==="custom" ? [num("pw"),num("ph")] : v.split(",").map(Number);
+}
+const PRESETS={
+  "117":{paper:"custom",pw:206,ph:164,shape:"round",lw:23,lh:23,rad:0,cols:8,rows:6,px:25,py:25,ml:4,mt:6,fs1:25,fs2:25,fs3:25},
+  "105":{paper:"custom",pw:210,ph:165,shape:"rect",lw:37,lh:25,rad:1,cols:5,rows:6,px:40.5,py:27,ml:6,mt:2,fs1:40,fs2:40,fs3:40}
+};
+const UP_FIELDS=["paper","pw","ph","shape","lw","lh","rad","cols","rows","px","py","ml","mt","ox","oy","outPaper","fs1","fs2","fs3"];
+function loadUP(){ try{ return JSON.parse(localStorage.getItem("tomy_user_presets")||"{}")||{}; }catch(e){ return {}; } }
+function saveUP(o){ try{ localStorage.setItem("tomy_user_presets",JSON.stringify(o)); }catch(e){ alert("Không lưu được mẫu trên trình duyệt này."); } }
+function buildPresetSelect(){
+  const up=loadUP(), names=Object.keys(up);
+  let h='<optgroup label="Mẫu có sẵn"><option value="117">Tomy 117 - tem tròn (8×6 = 48 tem)</option><option value="105">Tomy 105 - tem chữ nhật (5×6 = 30 tem)</option></optgroup>';
+  if(names.length) h+='<optgroup label="Mẫu của tôi">'+names.map(n=>`<option value="u:${esc(n)}">${esc(n)} (${up[n].cols}×${up[n].rows})</option>`).join('')+'</optgroup>';
+  h+='<option value="custom">Tùy chỉnh (chưa lưu)</option>';
+  const cur=$("preset").value;
+  $("preset").innerHTML=h;
+  if([...$("preset").options].some(o=>o.value===cur)) $("preset").value=cur;
+}
+function applyPreset(k){
+  let p=null;
+  if(k.startsWith("u:")){ const n=k.slice(2); p=loadUP()[n]; $("presetName").value=n; }
+  else { p=PRESETS[k]; $("presetName").value=""; }
+  if(!p) return;
+  Object.keys(p).forEach(f=>{ if($(f)) $(f).value=p[f]; });
+  $("start").value=1;
+}
+function syncPresetUI(){
+  const v=$("preset").value||"";
+  $("delPreset").style.display=v.startsWith("u:")?"":"none";
+}
+$("preset").addEventListener("change",()=>{
+  const v=$("preset").value;
+  if(v==="custom") $("geo").open=true; else applyPreset(v);
+  calibMode=false; render();
+});
+$("savePreset").onclick=()=>{
+  const name=$("presetName").value.trim();
+  if(!name){ alert("Hãy nhập tên cho loại tem trước khi lưu."); $("presetName").focus(); return; }
+  const up=loadUP();
+  if(up[name] && !confirm('Đã có mẫu "'+name+'". Ghi đè bằng cấu hình hiện tại?')) return;
+  const o={}; UP_FIELDS.forEach(f=>{ o[f]= isNaN(parseFloat($(f).value)) || /[,]/.test($(f).value) || $(f).tagName==="SELECT" ? $(f).value : parseFloat($(f).value); });
+  up[name]=o; saveUP(up);
+  buildPresetSelect(); $("preset").value="u:"+name;
+  calibMode=false; render();
+  alert('Đã lưu mẫu "'+name+'".');
+};
+$("delPreset").onclick=()=>{
+  const v=$("preset").value; if(!v.startsWith("u:")) return;
+  const n=v.slice(2);
+  if(!confirm('Xóa mẫu "'+n+'"?')) return;
+  const up=loadUP(); delete up[n]; saveUP(up);
+  buildPresetSelect(); $("preset").value="custom";
+  calibMode=false; render();
+};
+
+function showTab(t){
+  document.body.classList.toggle("show-preview",t==="pv");
+  $("tabIn").classList.toggle("on",t!=="pv");
+  $("tabPv").classList.toggle("on",t==="pv");
+  render();
+  window.scrollTo(0,0);
+}
+$("tabIn").onclick=()=>showTab("in");
+$("tabPv").onclick=()=>showTab("pv");
+
+let curW=206,curH=164;
+function fitPreview(){
+  const pv=$("preview"), avail=pv.clientWidth; if(!avail) return;
+  const MM=96/25.4, s=Math.min(1,(avail-4)/(curW*MM));
+  document.querySelectorAll(".pwrap").forEach(w=>{
+    w.style.width=(curW*MM*s)+"px"; w.style.height=(curH*MM*s)+"px";
+    w.firstChild.style.transform=`scale(${s})`;
+  });
+}
+window.addEventListener("resize",fitPreview);
+
+/* ----- bảng danh sách ----- */
+function drawRows(focusLast){
+  const tb=$("rowsBody"); tb.innerHTML="";
+  rowsData.forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><input list="dlColor" value="${esc(r.c)}" data-i="${i}" data-k="c"></td>
+      <td><input list="dlCap" value="${esc(r.s)}" data-i="${i}" data-k="s"></td>
+      <td class="q"><input type="number" min="1" value="${r.q}" data-i="${i}" data-k="q"></td>
+      <td class="x"><button class="sec sm" data-del="${i}">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll("input").forEach(inp=>{
+    inp.addEventListener("input",()=>{
+      const r=rowsData[+inp.dataset.i]; const k=inp.dataset.k;
+      r[k]= k==="q" ? Math.max(1,parseInt(inp.value,10)||1) : inp.value;
+      render();
+    });
+    if(inp.dataset.k==="q") inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ addRow(); } });
+  });
+  tb.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{rowsData.splice(+b.dataset.del,1);drawRows();render();});
+  if(focusLast){ const ins=tb.querySelectorAll("tr:last-child input"); if(ins[0]) ins[0].focus(); }
+}
+function addRow(){ rowsData.push({c:"",s:"",q:1}); drawRows(true); render(); }
+$("addRow").onclick=addRow;
+$("clearRows").onclick=()=>{rowsData=[{c:"",s:"",q:1}];drawRows();render();};
+$("addPaste").onclick=()=>{
+  const lines=$("paste").value.split(/\r?\n/).filter(l=>l.trim());
+  lines.forEach(l=>{
+    const p=(l.includes("\t")?l.split("\t"):l.split("|")).map(x=>x.trim());
+    let q=1; if(p.length>=3 && /^\d+$/.test(p[2])) q=Math.max(1,parseInt(p[2],10));
+    rowsData.push({c:p[0]||"",s:p[1]||"",q});
+  });
+  rowsData=rowsData.filter((r,i)=>r.c||r.s||rowsData.length===1);
+  $("paste").value=""; drawRows(); render();
+};
+
+function buildItems(){
+  const date=$("showDate").checked?fmtDate():"";
+  const items=[];
+  rowsData.forEach(r=>{
+    if(!r.c&&!r.s) return;
+    for(let i=0;i<r.q;i++) items.push([date,r.c,r.s]);
+  });
+  return items;
+}
+
+/* ----- vẽ trang ----- */
+function render(){
+  $("dateTxt").value=fmtDate();
+  save();
+  const [W,H]=paperWH();
+  const lw=num("lw"), lh=num("lh"), round=$("shape").value==="round", cols=Math.max(1,num("cols")|0), rows=Math.max(1,num("rows")|0);
+  const px=num("px"), py=num("py"), ml=num("ml")+num("ox"), mt=num("mt")+num("oy");
+  const per=cols*rows;
+  const start=Math.min(per,Math.max(1,num("start")|0));
+  const skip=start-1;
+  curW=W; curH=H;
+  let PW=W,PH=H; const op=$("outPaper").value;
+  if(op!=="same"){ [PW,PH]=op.split(",").map(Number); }
+  $("pageStyle").textContent=`@page{size:${PW}mm ${PH}mm;margin:0}`;
+  syncPresetUI();
+
+  const items=calibMode?[]:buildItems();
+  const pv=$("pages"); pv.innerHTML="";
+  let slots;
+  if(calibMode) slots=per;
+  else if($("fillAll").checked&&items.length) slots=Math.ceil((skip+items.length)/per)*per;
+  else slots=skip+items.length;
+  if(slots<=0) slots=per;
+  const pages=Math.max(1,Math.ceil(slots/per));
+  const showNum=$("guide").checked||calibMode;
+
+  for(let p=0;p<pages;p++){
+    const pg=document.createElement("div");
+    pg.className="page"+(showNum?" guide":"");
+    pg.style.width=W+"mm"; pg.style.height=H+"mm";
+    for(let i=0;i<per;i++){
+      const g=p*per+i;
+      const r=Math.floor(i/cols), c=i%cols;
+      const el=document.createElement("div");
+      el.className="lb";
+      el.style.width=lw+"mm"; el.style.height=lh+"mm";
+      el.style.borderRadius=round?"50%":num("rad")+"mm"; el.dataset.round=round?"1":"0";
+      el.style.left=(ml+c*px)+"mm"; el.style.top=(mt+r*py)+"mm";
+      const numHTML=showNum?`<span class="num">${i+1}</span>`:"";
+      if(calibMode){
+        el.classList.add("border");
+        el.innerHTML=`<div class="in" style="font-size:8pt;font-weight:400">${i+1}</div>`;
+      } else {
+        if(p===0){ el.classList.add("pick"); el.title="Bấm để bắt đầu in từ tem số "+(i+1); el.onclick=()=>{$("start").value=i+1;render();}; }
+        if(p===0&&g<skip){ el.classList.add("skip"); }
+        else {
+          if(p===0&&g===skip) el.classList.add("first");
+          const k=g-skip;
+          let it=items[k];
+          if(!it&&$("fillAll").checked&&items.length) it=items[k%items.length];
+          if(it){
+            if($("useBg").checked) el.style.background=$("bg").value;
+            if($("border").checked) el.classList.add("border");
+            el.style.color=$("color").value;
+            el.innerHTML=`<div class="in">`+
+              (it[0]?`<div class="l1" style="font-size:${num("fs1")}pt">${esc(it[0])}</div>`:"")+
+              (it[1]?`<div class="l2" style="font-size:${num("fs2")}pt">${esc(it[1])}</div>`:"")+
+              (it[2]?`<div class="l3" style="font-size:${num("fs3")}pt">${esc(it[2])}</div>`:"")+
+              `</div>`+numHTML;
+          } else el.innerHTML=numHTML;
+        }
+        if(p===0&&g<skip) el.innerHTML=numHTML;
+      }
+      if(calibMode) {} 
+      pg.appendChild(el);
+    }
+    const pn=document.createElement("div"); pn.className="pn"; pn.textContent=`Tờ ${p+1}/${pages}`; pg.appendChild(pn);
+    const wr=document.createElement("div"); wr.className="pwrap"; wr.appendChild(pg); pv.appendChild(wr);
+  }
+  fitText();
+  fitPreview();
+
+  let msg;
+  if(calibMode) msg="Đang ở chế độ CANH CHỈNH. Bấm 'In' để quay lại nội dung thật.";
+  else {
+    const lastOnFirst=Math.min(per,skip+items.length);
+    msg=`Tổng ${items.length} tem • ${per} tem/tờ • ${pages} tờ • Tờ 1 in từ tem ${start}`+(items.length?` đến tem ${lastOnFirst}`:"")+`. Các tờ sau in từ tem 1.`;
+  }
+  if(W>PW+0.01||H>PH+0.01) msg+=" ⚠️ Tờ tem lớn hơn khổ giấy máy in đã chọn.";
+  $("info").textContent=msg; $("pvinfo").textContent=msg+" Bấm vào 1 tem ở tờ 1 để chọn tem bắt đầu.";
+}
+
+function fitText(){
+  document.querySelectorAll(".lb .in").forEach(inn=>{
+    const lb=inn.parentElement;
+    if(!inn.children.length || !lb.clientWidth) return;
+    const rd=lb.dataset.round==="1";
+    const boxH=lb.clientHeight*(rd?0.78:0.90), boxW=lb.clientWidth*(rd?0.92:0.94);
+    const base=[...inn.children].map(ch=>parseFloat(ch.style.fontSize));
+    let guard=40, scale=1;
+    while(guard-->0 && (inn.scrollHeight>boxH || inn.scrollWidth>boxW)){
+      scale*=0.94;
+      [...inn.children].forEach((ch,i)=>ch.style.fontSize=(base[i]*scale)+"pt");
+      if(scale<0.2) break;
+    }
+  });
+}
+
+const GEO=["paper","shape","pw","ph","lw","lh","rad","cols","rows","px","py","ml","mt"];
+FIELDS.forEach(f=>{
+  const h=()=>{ if(GEO.includes(f)&&$("preset").value!=="custom") $("preset").value="custom"; calibMode=false;render();};
+  $(f).addEventListener("input",h); $(f).addEventListener("change",h);
+});
+$("start1").onclick=()=>{$("start").value=1;calibMode=false;render();};
+$("center").onclick=()=>{
+  const [W,H]=paperWH();
+  $("ml").value=((W-((num("cols")-1)*num("px")+num("lw")))/2).toFixed(2);
+  $("mt").value=((H-((num("rows")-1)*num("py")+num("lh")))/2).toFixed(2);
+  calibMode=false; render();
+};
+$("print").onclick=()=>{calibMode=false;document.body.classList.add("show-preview");render();setTimeout(()=>window.print(),200);};
+$("calib").onclick=()=>{calibMode=true;document.body.classList.add("show-preview");render();setTimeout(()=>window.print(),200);};
+
+const hadSaved=!!localStorage.getItem("tomy_v5");
+buildPresetSelect();
+load();
+if(!hadSaved){ $("preset").value="117"; applyPreset("117"); }
+else if(!$("preset").value) $("preset").value="custom";
+if($("preset").value.startsWith("u:")) $("presetName").value=$("preset").value.slice(2);
+drawRows(); render();
+</script>
+</body>
+</html>

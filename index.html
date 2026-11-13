@@ -326,6 +326,7 @@ html[data-theme="ledger"] .red{color:var(--sel)}
 <header>
   <div class="brand"><div class="logo">%</div><div style="min-width:0"><h1>In Sticker ĐMX</h1><small>Tạo sticker giá hàng loạt</small></div></div>
   <span class="badge" id="hdCount">0 sticker</span>
+  <button class="hbtn ghost" id="btnTem" title="In tem Tomy">🏷️<span class="ht"> Tem Tomy</span></button>
   <button class="hbtn ghost" id="btnHelp" title="Hướng dẫn">❓<span class="ht"> Hướng dẫn</span></button>
   <button class="hbtn" id="btnMode" title="Quản trị">⚙️<span class="ht"> Quản trị</span></button>
 </header>
@@ -393,6 +394,12 @@ html[data-theme="ledger"] .red{color:var(--sel)}
 </section>
 
 <!-- ================= HƯỚNG DẪN ================= -->
+<!-- ================= IN TEM TOMY ================= -->
+<section class="view" id="vTem">
+ <div style="display:flex;justify-content:flex-end;margin:0 0 8px"><a class="btn" href="tem_tomy.html" target="_blank" rel="noopener">↗ Mở toàn màn hình</a></div>
+ <iframe id="temFrame" title="In tem Tomy" style="width:100%;height:calc(100vh - 110px);height:calc(100dvh - 110px);min-height:560px;border:0;border-radius:12px;background:#fff"></iframe>
+</section>
+
 <section class="view" id="vHelp">
   <div class="card helpHero">
     <h2>📘 Hướng dẫn sử dụng</h2>
@@ -1224,8 +1231,8 @@ async function saveDraft(){if(!draft)return;draft.name=$('#edName').value.trim()
 /* ---------- vẽ lại ---------- */
 function renderAll(){setStatus(statusMsg&&!ST.loadedAt?statusMsg:undefined);renderPicked();renderCart();renderGallery();renderAdmin();doSearch()}
 let curView='staff';
-function setView(v){curView=v;document.body.classList.toggle('admin',v!=='staff');$('#vStaff').classList.toggle('on',v==='staff');$('#vAdmin').classList.toggle('on',v==='admin');$('#vHelp').classList.toggle('on',v==='help');
-  $('#btnMode').innerHTML=v==='admin'?'←<span class="ht"> In sticker</span>':'⚙️<span class="ht"> Quản trị</span>';$('#btnHelp').classList.toggle('on',v==='help');$('#btnHelp').innerHTML=v==='help'?'←<span class="ht"> In sticker</span>':'❓<span class="ht"> Hướng dẫn</span>';window.scrollTo(0,0);if(v==='admin')renderAdmin()}
+function setView(v){curView=v;document.body.classList.toggle('admin',v!=='staff');$('#vStaff').classList.toggle('on',v==='staff');$('#vAdmin').classList.toggle('on',v==='admin');$('#vHelp').classList.toggle('on',v==='help');$('#vTem').classList.toggle('on',v==='tem');
+  $('#btnMode').innerHTML=v==='admin'?'←<span class="ht"> In sticker</span>':'⚙️<span class="ht"> Quản trị</span>';$('#btnHelp').classList.toggle('on',v==='help');$('#btnHelp').innerHTML=v==='help'?'←<span class="ht"> In sticker</span>':'❓<span class="ht"> Hướng dẫn</span>';$('#btnTem').classList.toggle('on',v==='tem');$('#btnTem').innerHTML=v==='tem'?'←<span class="ht"> In sticker</span>':'🏷️<span class="ht"> Tem Tomy</span>';if(v==='tem'){const f=$('#temFrame');if(f&&!f.getAttribute('src'))f.setAttribute('src','tem_tomy.html')}window.scrollTo(0,0);if(v==='admin')renderAdmin()}
 function setMode(admin){setView(admin?'admin':'staff')}
 
 /* ---------- sự kiện: nhân viên ---------- */
@@ -1274,6 +1281,7 @@ $('#btnGen').onclick=generate;$('#btnDl').onclick=()=>lastPdf&&download(lastPdf.
 $('#dockGo').onclick=()=>$('#printCard').scrollIntoView({behavior:'smooth',block:'start'});
 $('#btnMode').onclick=()=>setView(curView==='admin'?'staff':'admin');
 $('#btnHelp').onclick=()=>setView(curView==='help'?'staff':'help');
+$('#btnTem').onclick=()=>setView(curView==='tem'?'staff':'tem');
 $('#vHelp').addEventListener('click',e=>{const a=e.target.closest('.toc a');if(!a)return;e.preventDefault();const d=$(a.getAttribute('href'));if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}});
 
 /* ---------- sự kiện: quản trị ---------- */
