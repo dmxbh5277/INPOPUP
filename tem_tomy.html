@@ -257,12 +257,31 @@
     <div class="chk"><input type="checkbox" id="useBg"><span>In màu nền tem</span></div>
     <div class="chk"><input type="checkbox" id="border"><span>In viền tròn quanh tem</span></div>
 
-    <h2>4. Chọn tem bắt đầu in</h2>
-    <div class="row">
-      <div><label>Bắt đầu từ tem số</label><input type="number" id="start" value="1" min="1"></div>
-      <div><label>&nbsp;</label><button class="sec" id="start1">Về tem 1</button></div>
+    <h2>4. Chọn vị trí tem để in</h2>
+    <select id="pickMode">
+      <option value="seq">Theo thứ tự (chọn tem bắt đầu)</option>
+      <option value="free">Chọn từng vị trí còn trống</option>
+    </select>
+
+    <div class="seqonly">
+      <div class="row">
+        <div><label>Bắt đầu từ tem số</label><input type="number" id="start" value="1" min="1"></div>
+        <div><label>&nbsp;</label><button class="sec" id="start1">Về tem 1</button></div>
+      </div>
+      <div class="note">👉 Trên khung xem trước, <b>mỗi tem có số thứ tự</b> (đếm từ trái sang phải, từ trên xuống). <b>Bấm vào tem</b> ở tờ 1 để chọn tem bắt đầu; các tem phía trước bị sọc xám = bỏ qua. Viền cam = tem đầu tiên sẽ in. Số thứ tự chỉ hiện trên màn hình, <b>không in ra</b>.</div>
     </div>
-    <div class="note">👉 Trên khung xem trước, <b>mỗi tem có số thứ tự</b> (đếm từ trái sang phải, từ trên xuống). <b>Bấm trực tiếp vào tem</b> ở tờ 1 để chọn tem bắt đầu. Tem bị sọc xám = đã dùng, bỏ qua. Viền cam = tem đầu tiên sẽ in. Số thứ tự chỉ hiện trên màn hình, <b>không in ra</b>.</div>
+
+    <div class="freeonly">
+      <div class="note" style="margin-top:8px">👉 <b>Bấm vào từng tem</b> ở tờ 1 để đổi giữa <b>còn trống</b> (tem trắng, sẽ in) và <b>đã dùng</b> (sọc xám, bỏ qua). Nội dung được điền lần lượt vào các tem còn trống, từ trái sang phải, từ trên xuống. Viền cam = tem đầu tiên sẽ in.</div>
+      <div class="note" id="freeInfo" style="font-weight:600;color:#1b2430"></div>
+      <div class="btns">
+        <button class="sec sm" id="slotAllFree">Tất cả còn trống</button>
+        <button class="sec sm" id="slotAllUsed">Tất cả đã dùng</button>
+        <button class="sec sm" id="slotInvert">Đảo chọn</button>
+      </div>
+      <div class="btns"><button class="sm" id="slotMarkPrinted">✅ Đánh dấu các tem vừa in là đã dùng</button></div>
+      <div class="note">Sau khi in xong, bấm nút xanh để các vị trí vừa in chuyển thành "đã dùng" — lần sau dùng lại đúng tờ giấy đó thì chỉ còn các chỗ trống thật. Vị trí đã chọn được nhớ trên thiết bị này và được xóa khi đổi mẫu tem.</div>
+    </div>
 
     
 
@@ -421,8 +440,9 @@ const QR=(function(){
 })();
 
 const $ = id => document.getElementById(id);
-const FIELDS = ["mode","scanQty","scanBeep","scanVib","qEc","qScale","qQuiet","qFs","qShowText","date","showDate","fillAll","fs1","fs2","fs3","color","bg","useBg","border","outPaper","preset","paper","shape","pw","ph","lw","lh","rad","cols","rows","px","py","ml","mt","ox","oy","start","guide"];
+const FIELDS = ["mode","pickMode","scanQty","scanBeep","scanVib","qEc","qScale","qQuiet","qFs","qShowText","date","showDate","fillAll","fs1","fs2","fs3","color","bg","useBg","border","outPaper","preset","paper","shape","pw","ph","lw","lh","rad","cols","rows","px","py","ml","mt","ox","oy","start","guide"];
 let calibMode = false;
+let usedSlots = [];
 let scanRows = [];
 let qrRows = [{c:"SN0001",n:"Trắng 4GB",q:5},{c:"SN0002",n:"Đen 6GB",q:5}];
 let rowsData = [{c:"Trắng",s:"4GB/128GB",q:5},{c:"Đen",s:"6GB/128GB",q:5}];
@@ -440,7 +460,7 @@ function fmtDate(){
 
 function save(){
   try{
-    const o={rowsData,qrRows,scanRows};
+    const o={rowsData,qrRows,scanRows,usedSlots};
     FIELDS.forEach(f=>{const e=$(f);o[f]=e.type==="checkbox"?e.checked:e.value});
     localStorage.setItem("tomy_v5",JSON.stringify(o));
   }catch(e){}
@@ -453,6 +473,7 @@ function load(){
     if(Array.isArray(o.rowsData)&&o.rowsData.length) rowsData=o.rowsData;
     if(Array.isArray(o.qrRows)&&o.qrRows.length) qrRows=o.qrRows;
     if(Array.isArray(o.scanRows)) scanRows=o.scanRows;
+    if(Array.isArray(o.usedSlots)) usedSlots=o.usedSlots.filter(n=>Number.isInteger(n)&&n>=0);
   }catch(e){}
 }
 
@@ -482,7 +503,7 @@ function applyPreset(k){
   else { p=PRESETS[k]; $("presetName").value=""; }
   if(!p) return;
   Object.keys(p).forEach(f=>{ if($(f)) $(f).value=p[f]; });
-  $("start").value=1;
+  $("start").value=1; usedSlots=[];
 }
 function syncPresetUI(){
   const v=$("preset").value||"";
@@ -642,7 +663,14 @@ function render(){
   const px=num("px"), py=num("py"), ml=num("ml")+num("ox"), mt=num("mt")+num("oy");
   const per=cols*rows;
   const start=Math.min(per,Math.max(1,num("start")|0));
-  const skip=start-1;
+  const freeMode=$("pickMode").value==="free";
+  usedSlots=[...new Set(usedSlots.filter(n=>n<per))];
+  const usedSet=new Set(usedSlots);
+  const avail=[]; const rank={};
+  for(let i=0;i<per;i++){ const ok=freeMode?!usedSet.has(i):(i>=start-1); if(ok){ rank[i]=avail.length; avail.push(i); } }
+  const m=avail.length;
+  document.querySelectorAll(".seqonly").forEach(e=>e.style.display=freeMode?"none":"");
+  document.querySelectorAll(".freeonly").forEach(e=>e.style.display=freeMode?"":"none");
   curW=W; curH=H;
   let PW=W,PH=H; const op=$("outPaper").value;
   if(op!=="same"){ [PW,PH]=op.split(",").map(Number); }
@@ -657,11 +685,9 @@ function render(){
   const items=calibMode?[]:buildItems();
   const pv=$("pages"); pv.innerHTML="";
   let slots;
-  if(calibMode) slots=per;
-  else if($("fillAll").checked&&items.length) slots=Math.ceil((skip+items.length)/per)*per;
-  else slots=skip+items.length;
-  if(slots<=0) slots=per;
-  const pages=Math.max(1,Math.ceil(slots/per));
+  let pages;
+  if(calibMode||!items.length) pages=1;
+  else pages=items.length<=m?1:1+Math.ceil((items.length-m)/per);
   const showNum=$("guide").checked||calibMode;
 
   for(let p=0;p<pages;p++){
@@ -681,11 +707,21 @@ function render(){
         el.classList.add("border");
         el.innerHTML=`<div class="in" style="font-size:8pt;font-weight:400">${i+1}</div>`;
       } else {
-        if(p===0){ el.classList.add("pick"); el.title="Bấm để bắt đầu in từ tem số "+(i+1); el.onclick=()=>{$("start").value=i+1;render();}; }
-        if(p===0&&g<skip){ el.classList.add("skip"); }
+        const blocked=p===0&&!(i in rank);
+        if(p===0){
+          el.classList.add("pick");
+          if(freeMode){
+            el.title="Bấm để đổi: còn trống ⇄ đã dùng (tem số "+(i+1)+")";
+            el.onclick=()=>{ const j=usedSlots.indexOf(i); if(j>=0) usedSlots.splice(j,1); else usedSlots.push(i); render(); };
+          } else {
+            el.title="Bấm để bắt đầu in từ tem số "+(i+1);
+            el.onclick=()=>{$("start").value=i+1;render();};
+          }
+        }
+        if(blocked){ el.classList.add("skip"); }
         else {
-          if(p===0&&g===skip) el.classList.add("first");
-          const k=g-skip;
+          if(p===0&&i===avail[0]) el.classList.add("first");
+          const k=p===0?rank[i]:m+(p-1)*per+i;
           let it=items[k];
           if(!it&&$("fillAll").checked&&items.length) it=items[k%items.length];
           if(it){
@@ -700,7 +736,7 @@ function render(){
               `</div>`+numHTML;
           } else el.innerHTML=numHTML;
         }
-        if(p===0&&g<skip) el.innerHTML=numHTML;
+        if(blocked) el.innerHTML=numHTML;
       }
       if(calibMode) {} 
       pg.appendChild(el);
@@ -715,17 +751,29 @@ function render(){
   let msg;
   if(calibMode) msg="Đang ở chế độ CANH CHỈNH. Bấm 'In' để quay lại nội dung thật.";
   else {
-    const lastOnFirst=Math.min(per,skip+items.length);
-    msg=`Tổng ${items.length} tem • ${per} tem/tờ • ${pages} tờ • Tờ 1 in từ tem ${start}`+(items.length?` đến tem ${lastOnFirst}`:"")+`. Các tờ sau in từ tem 1.`;
+    if(freeMode){
+      const used=avail.slice(0,Math.min(m,items.length));
+      msg=`Tổng ${items.length} tem • ${per} tem/tờ • ${pages} tờ • Tờ 1: còn trống ${m}/${per} vị trí`+(items.length&&m?`, in vào tem ${fmtRanges(used)}`:"")+(pages>1?". Các tờ sau in đủ từ tem 1.":".");
+      if(!m) msg+=" ⚠️ Chưa có vị trí nào còn trống ở tờ 1 — nội dung sẽ in từ tờ 2.";
+    } else {
+      const lastOnFirst=Math.min(per,start-1+items.length);
+      msg=`Tổng ${items.length} tem • ${per} tem/tờ • ${pages} tờ • Tờ 1 in từ tem ${start}`+(items.length?` đến tem ${lastOnFirst}`:"")+`. Các tờ sau in từ tem 1.`;
+    }
+    $("freeInfo").textContent=`Còn trống: ${m}/${per} vị trí`+(m?` (tem ${fmtRanges(avail)})`:"");
   }
   if(qrMode&&!calibMode){
     if(qrMin<Infinity) msg+=` • Module QR nhỏ nhất ≈ ${qrMin.toFixed(2)} mm`+(qrMin<0.3?" ⚠️ ô quá nhỏ, khó quét: hãy rút gọn nội dung, hạ mức sửa lỗi xuống L/M, hoặc dùng tem lớn hơn.":" (đủ rõ để quét).");
     if(qrBad) msg+=` ⚠️ ${qrBad} tem có nội dung quá dài, không tạo được QR.`;
   }
   if(W>PW+0.01||H>PH+0.01) msg+=" ⚠️ Tờ tem lớn hơn khổ giấy máy in đã chọn.";
-  $("info").textContent=msg; $("pvinfo").textContent=msg+" Bấm vào 1 tem ở tờ 1 để chọn tem bắt đầu.";
+  $("info").textContent=msg; $("pvinfo").textContent=msg+(freeMode?" Bấm vào tem ở tờ 1 để đổi còn trống/đã dùng.":" Bấm vào 1 tem ở tờ 1 để chọn tem bắt đầu.");
 }
 
+function fmtRanges(a){
+  const out=[]; let i=0;
+  while(i<a.length){ let j=i; while(j+1<a.length&&a[j+1]===a[j]+1) j++; out.push(j>i?`${a[i]+1}-${a[j]+1}`:`${a[i]+1}`); i=j+1; }
+  return out.join(", ");
+}
 function fitText(){
   document.querySelectorAll(".lb .in").forEach(inn=>{
     const lb=inn.parentElement;
@@ -917,6 +965,17 @@ FIELDS.forEach(f=>{
   const h=()=>{ if(GEO.includes(f)&&$("preset").value!=="custom") $("preset").value="custom"; calibMode=false;render();};
   $(f).addEventListener("input",h); $(f).addEventListener("change",h);
 });
+$("slotAllFree").onclick=()=>{ usedSlots=[]; calibMode=false; render(); };
+$("slotAllUsed").onclick=()=>{ const per=Math.max(1,num("cols")|0)*Math.max(1,num("rows")|0); usedSlots=[...Array(per).keys()]; calibMode=false; render(); };
+$("slotInvert").onclick=()=>{ const per=Math.max(1,num("cols")|0)*Math.max(1,num("rows")|0); const u=new Set(usedSlots); usedSlots=[...Array(per).keys()].filter(i=>!u.has(i)); calibMode=false; render(); };
+$("slotMarkPrinted").onclick=()=>{
+  const per=Math.max(1,num("cols")|0)*Math.max(1,num("rows")|0);
+  const u=new Set(usedSlots.filter(n=>n<per)); const avail=[]; for(let i=0;i<per;i++) if(!u.has(i)) avail.push(i);
+  const n=Math.min(avail.length,buildItems().length);
+  if(!n){ alert("Chưa có tem nào để đánh dấu."); return; }
+  if(!confirm("Đánh dấu "+n+" vị trí ở tờ 1 (tem "+fmtRanges(avail.slice(0,n))+") là ĐÃ DÙNG?")) return;
+  avail.slice(0,n).forEach(i=>u.add(i)); usedSlots=[...u]; calibMode=false; render();
+};
 $("start1").onclick=()=>{$("start").value=1;calibMode=false;render();};
 $("center").onclick=()=>{
   const [W,H]=paperWH();
