@@ -73,6 +73,11 @@
   .qin svg{display:block;flex:none}
   .qcap{white-space:normal;overflow-wrap:anywhere;word-break:break-word;text-align:center;width:94%;font-weight:600;line-height:1.12}
   .scanbox{border:1px solid #b9d0f5;background:#f4f8ff;border-radius:8px;padding:8px 10px;margin:10px 0}
+  .scanbox{transition:background .15s,border-color .15s}
+  .scanbox.hit{background:#d4f5dc;border-color:#2e9e4f}
+  .scanbox.dup{background:#fff0c9;border-color:#e0a100}
+  #camVid.hit{outline:5px solid #2e9e4f}
+  #camVid.dup{outline:5px solid #e0a100}
   .scanbox .tw{max-height:210px;overflow:auto;background:#fff;border-radius:6px}
   .scanbox tr.flash td{background:#d9f7e0;transition:background .6s}
   #scanMsg{min-height:16px}
@@ -101,103 +106,7 @@
     <h2>1. Chọn kiểu tem</h2>
     <select id="mode"><option value="text">In FIFO (Ngày / Màu / Dung lượng)</option><option value="qr">In QR Code</option></select>
 
-    <h2>2. Nội dung tem</h2>
-    <label>Ngày (hiện dạng dd/mm/yy)</label>
-    <div class="row">
-      <input type="date" id="date">
-      <input type="text" id="dateTxt" class="datebig" readonly>
-    </div>
-    <div class="chk"><input type="checkbox" id="showDate" checked><span>In dòng Ngày</span></div>
-
-
-    <div class="txtonly">
-    <label style="margin-top:10px"><b>Danh sách tem</b> (Text 1 = Màu, Text 2 = Dung lượng)</label>
-    <table>
-      <thead><tr><th>Text 1: Màu</th><th>Text 2: Dung lượng</th><th class="q">SL</th><th class="x"></th></tr></thead>
-      <tbody id="rowsBody"></tbody>
-    </table>
-    <div class="btns"><button class="sec sm" id="addRow">+ Thêm dòng</button><button class="sec sm" id="clearRows">Xóa hết</button></div>
-
-    <datalist id="dlColor"><option value="Trắng"><option value="Đen"><option value="Xanh"><option value="Xanh dương"><option value="Xanh lá"><option value="Đỏ"><option value="Vàng"><option value="Hồng"><option value="Tím"><option value="Xám"><option value="Bạc"><option value="Vàng đồng"><option value="Titan"></datalist>
-    <datalist id="dlCap"><option value="4GB/64GB"><option value="4GB/128GB"><option value="6GB/64GB"><option value="6GB/128GB"><option value="8GB/128GB"><option value="8GB/256GB"><option value="12GB/256GB"><option value="12GB/512GB"></datalist>
-
-    <label>Hoặc dán từ Excel (cột Màu, Dung lượng, SL) rồi bấm Thêm</label>
-    <textarea id="paste" placeholder="Trắng&#9;4GB/128GB&#9;5"></textarea>
-    <div class="btns"><button class="sec sm" id="addPaste">Thêm từ ô dán</button></div>
-    </div>
-
-    <div class="qronly">
-      <div class="scanbox">
-        <label style="margin-top:0"><b>📷 Quét mã sản phẩm (QR Code / Barcode)</b></label>
-        <div class="row">
-          <div><label>Quét hoặc gõ mã rồi Enter</label><input type="text" id="scanIn" placeholder="Quét hoặc gõ mã…" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
-          <div><label>SL cộng mỗi lần quét</label><input type="number" id="scanQty" value="1" min="1"></div>
-        </div>
-        <div class="btns"><button class="sec sm" id="camBtn">📷 Quét bằng camera</button></div>
-        <video id="camVid" playsinline muted style="display:none;width:100%;border-radius:8px;margin-top:6px;background:#000"></video>
-        <div class="note" id="scanMsg"></div>
-        <div class="tw"><table>
-          <thead><tr><th>Mã sản phẩm</th><th class="q">Số lượng</th><th class="x"></th></tr></thead>
-          <tbody id="scanBody"></tbody>
-        </table></div>
-        <div class="btns"><button class="sm" id="scanToList">⬇ Đưa vào danh sách in QR</button><button class="sec sm" id="scanClear">Xóa hết</button></div>
-        <div class="note">Máy quét USB/Bluetooth hoạt động như bàn phím: chỉ cần để con trỏ ở ô quét. Quét trùng mã thì số lượng được cộng dồn; cột Số lượng sửa tay được.</div>
-      </div>
-
-      <label style="margin-top:10px"><b>Danh sách mã QR</b></label>
-      <table>
-        <thead><tr><th>Mã QR (nội dung)</th><th>Tên dưới QR</th><th class="q">SL</th><th class="x"></th></tr></thead>
-        <tbody id="qrBody"></tbody>
-      </table>
-      <div class="btns"><button class="sec sm" id="qAddRow">+ Thêm dòng</button><button class="sec sm" id="qClear">Xóa hết</button></div>
-      <label>Hoặc dán từ Excel (cột Mã QR, Tên, SL) rồi bấm Thêm</label>
-      <textarea id="qPaste" placeholder="SN0001&#9;Trắng 4GB&#9;5"></textarea>
-      <div class="btns"><button class="sec sm" id="qAddPaste">Thêm từ ô dán</button></div>
-      <details>
-        <summary>🔢 Tạo dãy mã tự tăng</summary>
-        <div class="row"><div><label>Tiền tố</label><input type="text" id="gPre" placeholder="vd: SN"></div><div><label>Hậu tố</label><input type="text" id="gSuf"></div></div>
-        <div class="row3">
-          <div><label>Từ số</label><input type="number" id="gFrom" value="1"></div>
-          <div><label>Đến số</label><input type="number" id="gTo" value="48"></div>
-          <div><label>Số chữ số</label><input type="number" id="gDig" value="4" min="1" max="12"></div>
-        </div>
-        <div class="btns"><button class="sec sm" id="gAdd">+ Thêm dãy vào danh sách (tên = mã)</button></div>
-      </details>
-      <div class="row">
-        <div><label>Mức sửa lỗi</label>
-          <select id="qEc"><option value="0">L - thấp (QR gọn nhất)</option><option value="1" selected>M - vừa</option><option value="2">Q - khá</option><option value="3">H - cao (dễ quét khi bẩn)</option></select></div>
-        <div><label>Cỡ QR (% tự động)</label><input type="number" id="qScale" value="100" step="5" min="20" max="150"></div>
-      </div>
-      <div class="row">
-        <div><label>Viền trắng (số ô)</label><input type="number" id="qQuiet" value="1" step="1" min="0" max="8"></div>
-        <div><label>Cỡ chữ dưới QR (pt)</label><input type="number" id="qFs" value="6" step="0.5" min="2"></div>
-      </div>
-      <div class="chk"><input type="checkbox" id="qShowText" checked><span>In tên (cột 2) dưới mã QR</span></div>
-      <div class="note">QR tự co vừa tem (tem tròn: nằm gọn trong vòng tròn) và chừa chỗ cho dòng chữ/ngày bên dưới. Mã càng dài thì QR càng dày ô và ô càng nhỏ — xem cảnh báo "Module nhỏ nhất" ở cuối bảng này. Dòng "Ngày" ở trên dùng chung: bật là in ngày dưới QR. Màu chữ chính là màu QR; nếu in màu nền tem thì nên dùng nền sáng.</div>
-    </div>
-
-    <div class="chk"><input type="checkbox" id="fillAll"><span>Lặp danh sách cho đến hết tờ</span></div>
-
-    <div class="row3 txtonly">
-      <div><label>Cỡ Ngày (pt)</label><input type="number" id="fs1" value="8" step="0.5"></div>
-      <div><label>Cỡ Màu (pt)</label><input type="number" id="fs2" value="10" step="0.5"></div>
-      <div><label>Cỡ Dung lượng</label><input type="number" id="fs3" value="8" step="0.5"></div>
-    </div>
-    <div class="row">
-      <div><label>Màu chữ</label><input type="color" id="color" value="#000000"></div>
-      <div><label>Màu nền tem</label><input type="color" id="bg" value="#ffffff"></div>
-    </div>
-    <div class="chk"><input type="checkbox" id="useBg"><span>In màu nền tem</span></div>
-    <div class="chk"><input type="checkbox" id="border"><span>In viền tròn quanh tem</span></div>
-
-    <h2>3. Chọn tem bắt đầu in</h2>
-    <div class="row">
-      <div><label>Bắt đầu từ tem số</label><input type="number" id="start" value="1" min="1"></div>
-      <div><label>&nbsp;</label><button class="sec" id="start1">Về tem 1</button></div>
-    </div>
-    <div class="note">👉 Trên khung xem trước, <b>mỗi tem có số thứ tự</b> (đếm từ trái sang phải, từ trên xuống). <b>Bấm trực tiếp vào tem</b> ở tờ 1 để chọn tem bắt đầu. Tem bị sọc xám = đã dùng, bỏ qua. Viền cam = tem đầu tiên sẽ in. Số thứ tự chỉ hiện trên màn hình, <b>không in ra</b>.</div>
-
-    <h2>4. Loại tem Tomy</h2>
+    <h2>2. Chọn loại tem Tomy</h2>
     <label>Mẫu tem</label>
     <select id="preset"></select>
     <label>Lưu cấu hình hiện tại thành mẫu của tôi</label>
@@ -257,8 +166,108 @@
       <div class="btns"><button class="sec" id="center">Tự căn giữa lề</button></div>
     </details>
 
+    <h2>3. Nội dung tem</h2>
+    <label>Ngày (hiện dạng dd/mm/yy)</label>
+    <div class="row">
+      <input type="date" id="date">
+      <input type="text" id="dateTxt" class="datebig" readonly>
+    </div>
+    <div class="chk"><input type="checkbox" id="showDate" checked><span>In dòng Ngày</span></div>
+
+
+    <div class="txtonly">
+    <label style="margin-top:10px"><b>Danh sách tem</b> (Text 1 = Màu, Text 2 = Dung lượng)</label>
+    <table>
+      <thead><tr><th>Text 1: Màu</th><th>Text 2: Dung lượng</th><th class="q">SL</th><th class="x"></th></tr></thead>
+      <tbody id="rowsBody"></tbody>
+    </table>
+    <div class="btns"><button class="sec sm" id="addRow">+ Thêm dòng</button><button class="sec sm" id="clearRows">Xóa hết</button></div>
+
+    <datalist id="dlColor"><option value="Trắng"><option value="Đen"><option value="Xanh"><option value="Xanh dương"><option value="Xanh lá"><option value="Đỏ"><option value="Vàng"><option value="Hồng"><option value="Tím"><option value="Xám"><option value="Bạc"><option value="Vàng đồng"><option value="Titan"></datalist>
+    <datalist id="dlCap"><option value="4GB/64GB"><option value="4GB/128GB"><option value="6GB/64GB"><option value="6GB/128GB"><option value="8GB/128GB"><option value="8GB/256GB"><option value="12GB/256GB"><option value="12GB/512GB"></datalist>
+
+    <label>Hoặc dán từ Excel (cột Màu, Dung lượng, SL) rồi bấm Thêm</label>
+    <textarea id="paste" placeholder="Trắng&#9;4GB/128GB&#9;5"></textarea>
+    <div class="btns"><button class="sec sm" id="addPaste">Thêm từ ô dán</button></div>
+    </div>
+
+    <div class="qronly">
+      <div class="scanbox">
+        <label style="margin-top:0"><b>📷 Quét mã sản phẩm (QR Code / Barcode)</b></label>
+        <div class="row">
+          <div><label>Quét hoặc gõ mã rồi Enter</label><input type="text" id="scanIn" placeholder="Quét hoặc gõ mã…" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+          <div><label>SL cộng mỗi lần quét</label><input type="number" id="scanQty" value="1" min="1"></div>
+        </div>
+        <div class="chk"><input type="checkbox" id="scanBeep" checked><span>Phát tiếng bíp khi nhận mã</span></div>
+        <div class="chk"><input type="checkbox" id="scanVib" checked><span>Rung khi nhận mã (điện thoại Android)</span></div>
+        <div class="btns"><button class="sec sm" id="camBtn">📷 Quét bằng camera</button></div>
+        <video id="camVid" playsinline muted style="display:none;width:100%;border-radius:8px;margin-top:6px;background:#000"></video>
+        <div class="note" id="scanMsg"></div>
+        <div class="tw"><table>
+          <thead><tr><th>Mã sản phẩm</th><th class="q">Số lượng</th><th class="x"></th></tr></thead>
+          <tbody id="scanBody"></tbody>
+        </table></div>
+        <div class="btns"><button class="sm" id="scanToList">⬇ Đưa vào danh sách in QR</button><button class="sec sm" id="scanClear">Xóa hết</button></div>
+        <div class="note">Máy quét USB/Bluetooth hoạt động như bàn phím: chỉ cần để con trỏ ở ô quét. Quét trùng mã thì số lượng được cộng dồn; cột Số lượng sửa tay được. Mỗi lần nhận mã: khung nháy xanh + bíp 1 tiếng (mã mới) hoặc nháy vàng + bíp 2 tiếng (mã trùng, cộng dồn). Rung chỉ có trên Android; iPhone không hỗ trợ rung từ trình duyệt (vẫn có bíp và nháy màu, nhớ gạt công tắc tắt tiếng sang chế độ có tiếng).</div>
+      </div>
+
+      <label style="margin-top:10px"><b>Danh sách mã QR</b></label>
+      <table>
+        <thead><tr><th>Mã QR (nội dung)</th><th>Tên dưới QR</th><th class="q">SL</th><th class="x"></th></tr></thead>
+        <tbody id="qrBody"></tbody>
+      </table>
+      <div class="btns"><button class="sec sm" id="qAddRow">+ Thêm dòng</button><button class="sec sm" id="qClear">Xóa hết</button></div>
+      <label>Hoặc dán từ Excel (cột Mã QR, Tên, SL) rồi bấm Thêm</label>
+      <textarea id="qPaste" placeholder="SN0001&#9;Trắng 4GB&#9;5"></textarea>
+      <div class="btns"><button class="sec sm" id="qAddPaste">Thêm từ ô dán</button></div>
+      <details>
+        <summary>🔢 Tạo dãy mã tự tăng</summary>
+        <div class="row"><div><label>Tiền tố</label><input type="text" id="gPre" placeholder="vd: SN"></div><div><label>Hậu tố</label><input type="text" id="gSuf"></div></div>
+        <div class="row3">
+          <div><label>Từ số</label><input type="number" id="gFrom" value="1"></div>
+          <div><label>Đến số</label><input type="number" id="gTo" value="48"></div>
+          <div><label>Số chữ số</label><input type="number" id="gDig" value="4" min="1" max="12"></div>
+        </div>
+        <div class="btns"><button class="sec sm" id="gAdd">+ Thêm dãy vào danh sách (tên = mã)</button></div>
+      </details>
+      <div class="row">
+        <div><label>Mức sửa lỗi</label>
+          <select id="qEc"><option value="0">L - thấp (QR gọn nhất)</option><option value="1" selected>M - vừa</option><option value="2">Q - khá</option><option value="3">H - cao (dễ quét khi bẩn)</option></select></div>
+        <div><label>Cỡ QR (% tự động)</label><input type="number" id="qScale" value="100" step="5" min="20" max="150"></div>
+      </div>
+      <div class="row">
+        <div><label>Viền trắng (số ô)</label><input type="number" id="qQuiet" value="1" step="1" min="0" max="8"></div>
+        <div><label>Cỡ chữ dưới QR (pt)</label><input type="number" id="qFs" value="6" step="0.5" min="2"></div>
+      </div>
+      <div class="chk"><input type="checkbox" id="qShowText" checked><span>In tên (cột 2) dưới mã QR</span></div>
+      <div class="note">QR tự co vừa tem (tem tròn: nằm gọn trong vòng tròn) và chừa chỗ cho dòng chữ/ngày bên dưới. Mã càng dài thì QR càng dày ô và ô càng nhỏ — xem cảnh báo "Module nhỏ nhất" ở cuối bảng này. Dòng "Ngày" ở trên dùng chung: bật là in ngày dưới QR. Màu chữ chính là màu QR; nếu in màu nền tem thì nên dùng nền sáng.</div>
+    </div>
+
+    <div class="chk"><input type="checkbox" id="fillAll"><span>Lặp danh sách cho đến hết tờ</span></div>
+
+    <div class="row3 txtonly">
+      <div><label>Cỡ Ngày (pt)</label><input type="number" id="fs1" value="8" step="0.5"></div>
+      <div><label>Cỡ Màu (pt)</label><input type="number" id="fs2" value="10" step="0.5"></div>
+      <div><label>Cỡ Dung lượng</label><input type="number" id="fs3" value="8" step="0.5"></div>
+    </div>
+    <div class="row">
+      <div><label>Màu chữ</label><input type="color" id="color" value="#000000"></div>
+      <div><label>Màu nền tem</label><input type="color" id="bg" value="#ffffff"></div>
+    </div>
+    <div class="chk"><input type="checkbox" id="useBg"><span>In màu nền tem</span></div>
+    <div class="chk"><input type="checkbox" id="border"><span>In viền tròn quanh tem</span></div>
+
+    <h2>4. Chọn tem bắt đầu in</h2>
+    <div class="row">
+      <div><label>Bắt đầu từ tem số</label><input type="number" id="start" value="1" min="1"></div>
+      <div><label>&nbsp;</label><button class="sec" id="start1">Về tem 1</button></div>
+    </div>
+    <div class="note">👉 Trên khung xem trước, <b>mỗi tem có số thứ tự</b> (đếm từ trái sang phải, từ trên xuống). <b>Bấm trực tiếp vào tem</b> ở tờ 1 để chọn tem bắt đầu. Tem bị sọc xám = đã dùng, bỏ qua. Viền cam = tem đầu tiên sẽ in. Số thứ tự chỉ hiện trên màn hình, <b>không in ra</b>.</div>
+
+    
+
     <div class="chk"><input type="checkbox" id="guide" checked><span>Hiện số thứ tự & đường gióng (chỉ trên màn hình)</span></div>
-    <div class="note">Mẫu lưu gồm cả kích thước tem và <b>cỡ chữ mặc định</b> (Ngày/Màu/Dung lượng). Khi dùng vẫn chỉnh cỡ chữ tự do ở mục 2 mà không đổi mẫu; chữ tự thu nhỏ nếu dài quá tem. Lưu mẫu: chỉnh xong kích thước → gõ tên → bấm <b>💾 Lưu</b>. Mẫu của bạn sẽ nằm trong danh sách "Mẫu của tôi" (lưu trên thiết bị/trình duyệt đang dùng). Gõ trùng tên = cập nhật mẫu cũ.</div>
+    <div class="note">Mẫu lưu gồm cả kích thước tem và <b>cỡ chữ mặc định</b> (Ngày/Màu/Dung lượng). Khi dùng vẫn chỉnh cỡ chữ tự do ở mục 3 mà không đổi mẫu; chữ tự thu nhỏ nếu dài quá tem. Lưu mẫu: chỉnh xong kích thước → gõ tên → bấm <b>💾 Lưu</b>. Mẫu của bạn sẽ nằm trong danh sách "Mẫu của tôi" (lưu trên thiết bị/trình duyệt đang dùng). Gõ trùng tên = cập nhật mẫu cũ.</div>
     <div class="note">Khi in: <b>Tỉ lệ 100% (Actual size)</b>, lề <b>None</b>, tắt "Fit to page". Lệch tem thì bấm <b>Tờ canh chỉnh</b>, in giấy thường, đặt chồng lên tờ tem thật soi dưới đèn rồi chỉnh "Dịch ngang/dọc". Trên điện thoại: bấm In → chọn máy in hoặc Lưu PDF.</div>
     <div class="note" id="info"></div>
   </div>
@@ -412,7 +421,7 @@ const QR=(function(){
 })();
 
 const $ = id => document.getElementById(id);
-const FIELDS = ["mode","scanQty","qEc","qScale","qQuiet","qFs","qShowText","date","showDate","fillAll","fs1","fs2","fs3","color","bg","useBg","border","outPaper","preset","paper","shape","pw","ph","lw","lh","rad","cols","rows","px","py","ml","mt","ox","oy","start","guide"];
+const FIELDS = ["mode","scanQty","scanBeep","scanVib","qEc","qScale","qQuiet","qFs","qShowText","date","showDate","fillAll","fs1","fs2","fs3","color","bg","useBg","border","outPaper","preset","paper","shape","pw","ph","lw","lh","rad","cols","rows","px","py","ml","mt","ox","oy","start","guide"];
 let calibMode = false;
 let scanRows = [];
 let qrRows = [{c:"SN0001",n:"Trắng 4GB",q:5},{c:"SN0002",n:"Đen 6GB",q:5}];
@@ -775,13 +784,33 @@ function fitCaps(){
 }
 /* ----- quét mã ----- */
 let scanFlash=-1;
-function beep(){
+let audioCtx=null;
+function unlockAudio(){
   try{
     const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
-    beep.ctx=beep.ctx||new AC(); const o=beep.ctx.createOscillator(), g=beep.ctx.createGain();
-    o.frequency.value=1000; g.gain.value=0.08; o.connect(g); g.connect(beep.ctx.destination);
-    o.start(); o.stop(beep.ctx.currentTime+0.08);
+    if(!audioCtx) audioCtx=new AC();
+    if(audioCtx.state==="suspended") audioCtx.resume();
   }catch(e){}
+}
+["pointerdown","touchstart","keydown","click"].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+function tone(freq,t0,dur){
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.type="square"; o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.25,t0+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0+dur+0.02);
+}
+function scanFeedback(isDup){
+  if($("scanBeep").checked){
+    try{ unlockAudio(); const t=audioCtx.currentTime+0.01;
+      if(isDup){ tone(800,t,0.08); tone(800,t+0.13,0.08); } else tone(1500,t,0.12);
+    }catch(e){}
+  }
+  if($("scanVib").checked && navigator.vibrate){ try{ navigator.vibrate(isDup?[70,60,70]:100); }catch(e){} }
+  const cls=isDup?"dup":"hit";
+  [document.querySelector(".scanbox"),$("camVid")].forEach(el=>{
+    if(!el) return; el.classList.remove("hit","dup"); void el.offsetWidth; el.classList.add(cls);
+    clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("hit","dup"),350);
+  });
 }
 function setScanMsg(t){ $("scanMsg").textContent=t; }
 function drawScan(){
@@ -807,7 +836,7 @@ function scanAdd(code,qty){
   const i=scanRows.findIndex(x=>String(x.c).trim()===code);
   if(i>=0){ scanRows[i].q+=qty; scanFlash=i; setScanMsg(`${code}: +${qty} → tổng ${scanRows[i].q}`); }
   else { scanRows.push({c:code,q:qty}); scanFlash=scanRows.length-1; setScanMsg(`Đã thêm ${code} (SL ${qty})`); }
-  drawScan(); save(); beep();
+  drawScan(); save(); scanFeedback(i>=0);
 }
 $("scanIn").addEventListener("keydown",e=>{
   if(e.key==="Enter"){ e.preventDefault(); scanAdd($("scanIn").value,$("scanQty").value); $("scanIn").value=""; }
