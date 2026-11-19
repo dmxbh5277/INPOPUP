@@ -109,12 +109,17 @@
     <h2>2. Chọn loại tem Tomy</h2>
     <label>Mẫu tem</label>
     <select id="preset"></select>
-    <label>Lưu cấu hình hiện tại thành mẫu của tôi</label>
+    <label>Lưu cấu hình hiện tại thành mẫu (gõ trùng tên = sửa mẫu đó)</label>
     <div class="saverow">
-      <input type="text" id="presetName" placeholder="Đặt tên, vd: Tomy 103">
+      <input type="text" id="presetName" placeholder="Tên mẫu, vd: Tomy 103">
       <button id="savePreset" class="sm">💾 Lưu</button>
     </div>
-    <div class="btns"><button class="sec sm" id="delPreset" style="display:none">🗑 Xóa mẫu này</button></div>
+    <div class="btns">
+      <button class="sec sm" id="delPreset" style="display:none">🗑 Xóa mẫu này</button>
+      <button class="sec sm" id="reloadPreset">🔄 Tải lại mẫu</button>
+      <button class="sec sm" id="resetPreset">↺ Khôi phục mẫu gốc</button>
+    </div>
+    <div class="note" id="syncInfo"></div>
 
     <details id="geo">
       <summary>⚙️ Kích thước chi tiết (bấm để mở / sửa)</summary>
@@ -287,6 +292,13 @@
 
     <div class="chk"><input type="checkbox" id="guide" checked><span>Hiện số thứ tự & đường gióng (chỉ trên màn hình)</span></div>
     <div class="note">Mẫu lưu gồm cả kích thước tem và <b>cỡ chữ mặc định</b> (Ngày/Màu/Dung lượng). Khi dùng vẫn chỉnh cỡ chữ tự do ở mục 3 mà không đổi mẫu; chữ tự thu nhỏ nếu dài quá tem. Lưu mẫu: chỉnh xong kích thước → gõ tên → bấm <b>💾 Lưu</b>. Mẫu của bạn sẽ nằm trong danh sách "Mẫu của tôi" (lưu trên thiết bị/trình duyệt đang dùng). Gõ trùng tên = cập nhật mẫu cũ.</div>
+    <div class="note">Sửa/lưu/xóa mẫu (kể cả Tomy 117, 105) sẽ <b>áp dụng cho mọi người dùng</b> khi đã kết nối dùng chung (mẫu gồm kích thước tem, độ dịch khi in và cỡ chữ mặc định).</div>
+    <details id="conn"><summary>☁️ Kết nối dùng chung (dành cho quản trị)</summary>
+      <label>Link Apps Script (đuôi /exec)</label>
+      <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="btns"><button class="sec sm" id="apiSave">Kết nối</button><button class="sec sm" id="apiClear">Ngắt kết nối</button></div>
+      <div class="note">Cách này chỉ áp dụng cho thiết bị đang dùng. Để mọi người dùng chung, dán link vào dòng <code>PRESET_API_DEFAULT</code> ở đầu phần script trong file tem_tomy.html.</div>
+    </details>
     <div class="note">Khi in: <b>Tỉ lệ 100% (Actual size)</b>, lề <b>None</b>, tắt "Fit to page". Lệch tem thì bấm <b>Tờ canh chỉnh</b>, in giấy thường, đặt chồng lên tờ tem thật soi dưới đèn rồi chỉnh "Dịch ngang/dọc". Trên điện thoại: bấm In → chọn máy in hoặc Lưu PDF.</div>
     <div class="note" id="info"></div>
   </div>
@@ -481,58 +493,145 @@ function paperWH(){
   const v=$("paper").value;
   return v==="custom" ? [num("pw"),num("ph")] : v.split(",").map(Number);
 }
-const PRESETS={
-  "117":{paper:"custom",pw:206,ph:164,shape:"round",lw:23,lh:23,rad:0,cols:8,rows:6,px:25,py:25,ml:4,mt:6,fs1:25,fs2:25,fs3:25},
-  "105":{paper:"custom",pw:210,ph:165,shape:"rect",lw:37,lh:25,rad:1,cols:5,rows:6,px:40.5,py:27,ml:6,mt:2,fs1:40,fs2:40,fs3:40}
-};
+/* ======= DÁN LINK APPS SCRIPT (đuôi /exec) VÀO GIỮA 2 DẤU NHÁY ĐỂ MẪU TEM DÙNG CHUNG CHO MỌI NGƯỜI ======= */
+const PRESET_API_DEFAULT = 'https://script.google.com/macros/s/AKfycbzfTz4yOa8SBy7eyn7Ny8liXsfEqy4e1M6XBmVPt6tBYJ0JoYKKfq2CZ0-mdSOF78tVzw/exec';
+/* =============================================================================================== */
+let PRESET_API = PRESET_API_DEFAULT || (function(){ try{ return localStorage.getItem("tomy_api")||""; }catch(e){ return ""; } })();
+const sharedOn = !!PRESET_API;
+
+const DEFAULTS=[
+  {name:"Tomy 117",preset:{paper:"custom",pw:206,ph:164,shape:"round",lw:23,lh:23,rad:0,cols:8,rows:6,px:25,py:25,ml:4,mt:6,ox:0,oy:0,outPaper:"same",fs1:25,fs2:25,fs3:25}},
+  {name:"Tomy 105",preset:{paper:"custom",pw:210,ph:165,shape:"rect",lw:37,lh:25,rad:1,cols:5,rows:6,px:40.5,py:27,ml:6,mt:2,ox:0,oy:0,outPaper:"same",fs1:40,fs2:40,fs3:40}}
+];
 const UP_FIELDS=["paper","pw","ph","shape","lw","lh","rad","cols","rows","px","py","ml","mt","ox","oy","outPaper","fs1","fs2","fs3"];
-function loadUP(){ try{ return JSON.parse(localStorage.getItem("tomy_user_presets")||"{}")||{}; }catch(e){ return {}; } }
-function saveUP(o){ try{ localStorage.setItem("tomy_user_presets",JSON.stringify(o)); }catch(e){ alert("Không lưu được mẫu trên trình duyệt này."); } }
-function buildPresetSelect(){
-  const up=loadUP(), names=Object.keys(up);
-  let h='<optgroup label="Mẫu có sẵn"><option value="117">Tomy 117 - tem tròn (8×6 = 48 tem)</option><option value="105">Tomy 105 - tem chữ nhật (5×6 = 30 tem)</option></optgroup>';
-  if(names.length) h+='<optgroup label="Mẫu của tôi">'+names.map(n=>`<option value="u:${esc(n)}">${esc(n)} (${up[n].cols}×${up[n].rows})</option>`).join('')+'</optgroup>';
-  h+='<option value="custom">Tùy chỉnh (chưa lưu)</option>';
-  const cur=$("preset").value;
-  $("preset").innerHTML=h;
-  if([...$("preset").options].some(o=>o.value===cur)) $("preset").value=cur;
+const clone=o=>JSON.parse(JSON.stringify(o));
+const cacheKey=()=>sharedOn?"tomy_shared_cache":"tomy_local_presets";
+function readCache(){ try{ const a=JSON.parse(localStorage.getItem(cacheKey())||"null"); return Array.isArray(a)?a:null; }catch(e){ return null; } }
+function writeCache(){ try{ localStorage.setItem(cacheKey(),JSON.stringify(SHARED)); }catch(e){} }
+// danh sách khởi tạo = 2 mẫu gốc + mẫu cá nhân cũ (nếu có) lưu trên máy từ bản trước
+function initList(){
+  const l=clone(DEFAULTS);
+  try{
+    const old=JSON.parse(localStorage.getItem("tomy_user_presets")||"{}")||{};
+    Object.keys(old).forEach(n=>{ if(!l.some(x=>x.name===n) && old[n] && typeof old[n]==="object") l.push({name:n,preset:old[n]}); });
+  }catch(e){}
+  return l;
 }
-function applyPreset(k){
-  let p=null;
-  if(k.startsWith("u:")){ const n=k.slice(2); p=loadUP()[n]; $("presetName").value=n; }
-  else { p=PRESETS[k]; $("presetName").value=""; }
-  if(!p) return;
+let SHARED = readCache() || initList();   // [{name,preset}]
+let lastFetch=0;
+
+function setSync(t,bad){ const e=$("syncInfo"); e.textContent=t; e.style.color=bad?"#c92a2a":"#5a6676"; }
+function getPreset(n){ const x=SHARED.find(x=>x.name===n); return x&&x.preset; }
+
+async function apiPost(payload){
+  const r=await fetch(PRESET_API,{method:"POST",body:JSON.stringify(payload)});
+  const j=await r.json(); if(!j.ok) throw new Error(j.error||"Lỗi máy chủ");
+  return j.list;
+}
+async function apiGet(){
+  const r=await fetch(PRESET_API+(PRESET_API.includes("?")?"&":"?")+"t="+Date.now());
+  const j=await r.json(); if(!j.ok) throw new Error(j.error||"Lỗi máy chủ");
+  return j.list;      // null = máy chủ chưa có dữ liệu
+}
+function localApply(op){
+  if(op.action==="save"){ const i=SHARED.findIndex(x=>x.name===op.name); if(i>=0) SHARED[i].preset=op.preset; else SHARED.push({name:op.name,preset:op.preset}); }
+  else if(op.action==="delete"){ SHARED=SHARED.filter(x=>x.name!==op.name); }
+  else if(op.action==="reset"){ op.defaults.forEach(d=>{ const i=SHARED.findIndex(x=>x.name===d.name); if(i>=0) SHARED[i].preset=clone(d.preset); else SHARED.unshift(clone(d)); }); }
+  writeCache();
+}
+async function storeOp(op){
+  if(!sharedOn){ localApply(op); return; }
+  SHARED=await apiPost(op); writeCache();
+}
+
+function buildPresetSelect(){
+  const cur=$("preset").value;
+  let h='<optgroup label="Mẫu tem">'+SHARED.map(x=>`<option value="p:${esc(x.name)}">${esc(x.name)} (${x.preset.cols}×${x.preset.rows})</option>`).join('')+'</optgroup>';
+  h+='<option value="custom">Tùy chỉnh (chưa lưu)</option>';
+  $("preset").innerHTML=h;
+  const ok=[...$("preset").options].some(o=>o.value===cur);
+  $("preset").value=ok?cur:"custom";
+}
+function applyPreset(k,keepStart){
+  if(!k||!k.startsWith("p:")) return;
+  const n=k.slice(2), p=getPreset(n); if(!p) return;
+  $("presetName").value=n;
   Object.keys(p).forEach(f=>{ if($(f)) $(f).value=p[f]; });
-  $("start").value=1; usedSlots=[];
+  if(!keepStart){ $("start").value=1; usedSlots=[]; }
 }
 function syncPresetUI(){
   const v=$("preset").value||"";
-  $("delPreset").style.display=v.startsWith("u:")?"":"none";
+  $("delPreset").style.display=v.startsWith("p:")?"":"none";
 }
 $("preset").addEventListener("change",()=>{
   const v=$("preset").value;
   if(v==="custom") $("geo").open=true; else applyPreset(v);
   calibMode=false; render();
 });
-$("savePreset").onclick=()=>{
-  const name=$("presetName").value.trim();
-  if(!name){ alert("Hãy nhập tên cho loại tem trước khi lưu."); $("presetName").focus(); return; }
-  const up=loadUP();
-  if(up[name] && !confirm('Đã có mẫu "'+name+'". Ghi đè bằng cấu hình hiện tại?')) return;
-  const o={}; UP_FIELDS.forEach(f=>{ o[f]= isNaN(parseFloat($(f).value)) || /[,]/.test($(f).value) || $(f).tagName==="SELECT" ? $(f).value : parseFloat($(f).value); });
-  up[name]=o; saveUP(up);
-  buildPresetSelect(); $("preset").value="u:"+name;
-  calibMode=false; render();
-  alert('Đã lưu mẫu "'+name+'".');
+
+function busy(b){ ["savePreset","delPreset","reloadPreset","resetPreset"].forEach(id=>$(id).disabled=b); }
+
+async function refreshShared(){
+  if(!sharedOn){ setSync("💾 Chưa kết nối dùng chung: mẫu chỉ lưu trên thiết bị này."); return; }
+  setSync("☁️ Đang tải mẫu dùng chung...");
+  try{
+    let list=await apiGet();
+    if(list===null) list=await apiPost({action:"init",defaults:initList()});
+    const old=SHARED; SHARED=list; writeCache(); lastFetch=Date.now();
+    const cur=$("preset").value;
+    buildPresetSelect();
+    if(cur.startsWith("p:")){
+      const n=cur.slice(2), a=old.find(x=>x.name===n), b=SHARED.find(x=>x.name===n);
+      if(!b) $("preset").value="custom";
+      else if(!a || JSON.stringify(a.preset)!==JSON.stringify(b.preset)) applyPreset(cur,true);
+    }
+    setSync("☁️ Đã kết nối: mẫu dùng chung cho mọi người ("+SHARED.length+" mẫu).");
+    calibMode=false; render();
+  }catch(e){
+    setSync("⚠️ Không tải được mẫu dùng chung ("+e.message+"). Đang dùng bản lưu trên máy.",true);
+  }
+}
+
+$("savePreset").onclick=async()=>{
+  const name=$("presetName").value.trim().slice(0,60);
+  if(!name){ alert("Hãy nhập tên mẫu trước khi lưu."); $("presetName").focus(); return; }
+  if(SHARED.some(x=>x.name===name) && !confirm('Ghi đè mẫu "'+name+'" bằng cấu hình hiện tại?'+(sharedOn?'\nThay đổi áp dụng cho TẤT CẢ người dùng.':''))) return;
+  const o={}; UP_FIELDS.forEach(f=>{ const e=$(f); o[f]= e.tagName==="SELECT" ? e.value : (parseFloat(e.value)||0); });
+  busy(true);
+  try{
+    await storeOp({action:"save",name,preset:o});
+    buildPresetSelect(); $("preset").value="p:"+name;
+    calibMode=false; render();
+    alert('Đã lưu mẫu "'+name+'"'+(sharedOn?' cho mọi người dùng.':' (trên thiết bị này).'));
+  }catch(e){ alert("Không lưu được: "+e.message); }
+  busy(false);
 };
-$("delPreset").onclick=()=>{
-  const v=$("preset").value; if(!v.startsWith("u:")) return;
+$("delPreset").onclick=async()=>{
+  const v=$("preset").value; if(!v.startsWith("p:")) return;
   const n=v.slice(2);
-  if(!confirm('Xóa mẫu "'+n+'"?')) return;
-  const up=loadUP(); delete up[n]; saveUP(up);
-  buildPresetSelect(); $("preset").value="custom";
-  calibMode=false; render();
+  if(!confirm('Xóa mẫu "'+n+'"?'+(sharedOn?'\nMẫu sẽ biến mất với TẤT CẢ người dùng.':''))) return;
+  busy(true);
+  try{ await storeOp({action:"delete",name:n}); buildPresetSelect(); $("preset").value="custom"; calibMode=false; render(); }
+  catch(e){ alert("Không xóa được: "+e.message); }
+  busy(false);
 };
+$("resetPreset").onclick=async()=>{
+  if(!confirm('Khôi phục "Tomy 117" và "Tomy 105" về cấu hình gốc?'+(sharedOn?'\nÁp dụng cho TẤT CẢ người dùng.':''))) return;
+  busy(true);
+  try{
+    await storeOp({action:"reset",defaults:DEFAULTS});
+    const cur=$("preset").value; buildPresetSelect();
+    if(cur.startsWith("p:")) applyPreset(cur,true);
+    calibMode=false; render();
+  }catch(e){ alert("Không khôi phục được: "+e.message); }
+  busy(false);
+};
+$("reloadPreset").onclick=()=>refreshShared();
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && sharedOn && Date.now()-lastFetch>30000) refreshShared(); });
+
+$("apiUrl").value=PRESET_API;
+$("apiSave").onclick=()=>{ const v=$("apiUrl").value.trim(); if(!/^https:\/\/script\.google\.com\/.+\/exec/.test(v)){ alert("Link chưa đúng. Phải bắt đầu bằng https://script.google.com/ và kết thúc /exec"); return; } try{ localStorage.setItem("tomy_api",v); }catch(e){} location.reload(); };
+$("apiClear").onclick=()=>{ try{ localStorage.removeItem("tomy_api"); }catch(e){} location.reload(); };
 
 function showTab(t){
   document.body.classList.toggle("show-preview",t==="pv");
@@ -989,10 +1088,14 @@ $("calib").onclick=()=>{calibMode=true;document.body.classList.add("show-preview
 const hadSaved=!!localStorage.getItem("tomy_v5");
 buildPresetSelect();
 load();
-if(!hadSaved){ $("preset").value="117"; applyPreset("117"); }
-else if(!$("preset").value) $("preset").value="custom";
-if($("preset").value.startsWith("u:")) $("presetName").value=$("preset").value.slice(2);
-drawRows(); drawQr(); drawScan(); render();
+if(!hadSaved){ const f=SHARED.find(x=>x.name==="Tomy 117")||SHARED[0]; if(f){ $("preset").value="p:"+f.name; applyPreset("p:"+f.name); } }
+else if(!$("preset").value){
+  let sp=""; try{ sp=(JSON.parse(localStorage.getItem("tomy_v5")||"{}").preset)||""; }catch(e){}
+  const m=/^(117|105)$/.test(sp)?"p:Tomy "+sp:(sp.startsWith("u:")?"p:"+sp.slice(2):"");
+  $("preset").value=[...$("preset").options].some(o=>o.value===m)?m:"custom";
+}
+if($("preset").value.startsWith("p:")) $("presetName").value=$("preset").value.slice(2);
+drawRows(); drawQr(); drawScan(); render(); refreshShared();
 </script>
 </body>
 </html>
