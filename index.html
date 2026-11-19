@@ -1467,7 +1467,7 @@ async function build(){
   const {PDFDocument}=PDFLib;
   const src=await PDFDocument.load(new Uint8Array(buf),{ignoreEncryption:true});
   const out=await PDFDocument.create();
-  const emb=await out.embedPages(src.getPages());
+  const pgs=src.getPages();const emb=await out.embedPages(pgs,pgs.map(p=>{const b=p.getCropBox();return {left:b.x,bottom:b.y,right:b.x+b.width,top:b.y+b.height}}));
   for(let c=0;c<copies;c++)for(const ep of emb){
     const w=ep.width,h=ep.height;
     if(paper==='orig'){out.addPage([w,h]).drawPage(ep,{x:0,y:0,width:w,height:h});continue}
