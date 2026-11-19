@@ -11,6 +11,7 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/barcode-detector@3.1.3/dist/iife/ponyfill.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <style>
 :root{
   --bg:#eef2f8;--card:#ffffff;--text:#0f1b2d;--muted:#64748b;--line:#e2e8f0;--soft:#f6f8fc;
@@ -327,6 +328,7 @@ html[data-theme="ledger"] .red{color:var(--sel)}
   <div class="brand"><div class="logo">%</div><div style="min-width:0"><h1>In Sticker ĐMX</h1><small>Tạo sticker giá hàng loạt</small></div></div>
   <span class="badge" id="hdCount">0 sticker</span>
   <button class="hbtn ghost" id="btnTem" title="In tem Tomy">🏷️<span class="ht"> Tem Tomy</span></button>
+  <button class="hbtn ghost" id="btnPdf" title="In PDF cố định">📄<span class="ht"> PDF</span></button>
   <button class="hbtn ghost" id="btnHelp" title="Hướng dẫn">❓<span class="ht"> Hướng dẫn</span></button>
   <button class="hbtn" id="btnMode" title="Quản trị">⚙️<span class="ht"> Quản trị</span></button>
 </header>
@@ -394,6 +396,40 @@ html[data-theme="ledger"] .red{color:var(--sel)}
 </section>
 
 <!-- ================= HƯỚNG DẪN ================= -->
+<!-- ================= IN PDF CỐ ĐỊNH ================= -->
+<section class="view" id="vPdf">
+<style>
+.pfItem{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer;background:var(--card)}
+.pfItem.on{border-color:var(--pri);background:var(--pri2)}
+.pfItem .pfN{flex:1;min-width:0}.pfItem .pfN b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pfItem .pfN small{color:var(--muted);font-size:12.5px}
+.pfGrid{display:grid;grid-template-columns:1fr 110px;gap:10px;margin:10px 0}
+.pfGrid label{display:block;font-size:13px;font-weight:700;margin-bottom:4px}
+#pfBtns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:560px){#pfBtns{grid-template-columns:repeat(4,1fr)}}
+</style>
+  <div class="card">
+    <div class="row"><h3 class="grow" style="margin:0">📄 PDF in cố định</h3><button class="btn pri" id="pfAdd">+ Thêm PDF</button></div>
+    <input type="file" id="pfFile" accept="application/pdf" multiple hidden>
+    <div id="pfList" style="margin-top:10px"></div>
+    <p class="hint">Chọn file → chọn khổ giấy → In. File thêm bằng nút <b>+ Thêm PDF</b> được lưu trên máy này. Muốn mọi máy cùng thấy: đưa file vào thư mục <b>pdf</b> trên GitHub và ghi tên file vào <b>pdf/list.json</b>.</p>
+  </div>
+  <div class="card" id="pfPanel" hidden>
+    <div class="row"><b class="grow" id="pfSel" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></b></div>
+    <div class="pfGrid">
+      <div><label for="pfPaper">Khổ giấy</label><select id="pfPaper"><option value="orig">Giữ nguyên khổ gốc</option><option value="A4">A4 (210×297)</option><option value="A5">A5 (148×210)</option><option value="A6">A6 (105×148)</option><option value="A3">A3 (297×420)</option></select></div>
+      <div><label for="pfCopies">Số bản</label><input type="number" id="pfCopies" min="1" max="99" value="1" inputmode="numeric"></div>
+    </div>
+    <div id="pfBtns">
+      <button class="btn pri" id="pfPrint">🖨️ In</button>
+      <button class="btn" id="pfView">👁 Xem</button>
+      <button class="btn" id="pfDl">⬇ Tải về</button>
+      <button class="btn" id="pfShare">📤 Chia sẻ</button>
+    </div>
+    <p class="hint" id="pfMsg">PDF được co/giãn vừa khổ giấy, giữ tỉ lệ, tự xoay ngang/dọc theo từng trang. Trong hộp thoại in, nhớ chọn đúng khổ giấy của máy in.</p>
+  </div>
+</section>
+
 <!-- ================= IN TEM TOMY ================= -->
 <section class="view" id="vTem">
  <div style="display:flex;justify-content:flex-end;margin:0 0 8px"><a class="btn" href="tem_tomy.html" target="_blank" rel="noopener">↗ Mở toàn màn hình</a></div>
@@ -1397,6 +1433,89 @@ $('#btnSaveTheme').onclick=async()=>{const id=document.documentElement.dataset.t
   ST.api=LS.get('api','');ST.cart=LS.get('cart',[]);ST.batches=LS.get('batches',[]);Object.assign(ST.opts,LS.get('opts',{}));
   $('#oDate').value=ST.opts.date||'';setScanMode(ST.opts.scanMode);$('#paperSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===ST.opts.paper));
   if(await loadCache())setStatus();renderAll();loadAll(false)})();
+
+/* ================= PDF CỐ ĐỊNH ================= */
+(function(){
+const X={local:[],web:[],sel:null,bytes:{},busy:false};
+const PT={A3:[841.89,1190.55],A4:[595.28,841.89],A5:[419.53,595.28],A6:[297.64,419.53]};
+const all=()=>X.local.concat(X.web);
+const cur=()=>all().find(i=>i.id===X.sel);
+const sz=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+const msg=t=>{$('#pfMsg').textContent=t};
+async function ensureDb(){if(!IDB.db){try{await IDB.open()}catch(e){}}}
+async function load(){
+  await ensureDb();X.local=(await IDB.get('fixedPdfs'))||[];
+  try{const r=await fetch('pdf/list.json',{cache:'no-store'});
+    if(r.ok){const j=await r.json();X.web=(Array.isArray(j)?j:[]).map((x,i)=>{const o=typeof x==='string'?{file:x}:x,f=o.file||o.url||'';
+      return {id:'w'+i,web:true,name:o.name||f.replace(/\.pdf$/i,''),url:/^https?:/.test(f)||f.startsWith('pdf/')?f:'pdf/'+f}})}else X.web=[]}
+  catch(e){X.web=[]}
+  if(X.sel&&!cur())X.sel=null;render()}
+function render(){
+  const box=$('#pfList'),L=all();
+  box.innerHTML=L.length?L.map(i=>`<div class="pfItem${i.id===X.sel?' on':''}" data-id="${i.id}"><span style="font-size:22px">📄</span><div class="pfN"><b>${esc(i.name)}</b><small>${i.pages?i.pages+' trang · ':''}${i.size?sz(i.size)+' · ':''}${i.web?'GitHub':'trên máy này'}</small></div>${i.web?'':`<button class="btn red" data-del="${i.id}" title="Xóa">🗑</button>`}</div>`).join(''):'<p class="hint">Chưa có file PDF nào. Bấm <b>+ Thêm PDF</b>.</p>';
+  const it=cur();$('#pfPanel').hidden=!it;if(it)$('#pfSel').textContent='Đã chọn: '+it.name}
+async function getBytes(it){
+  if(it.data)return it.data;if(X.bytes[it.id])return X.bytes[it.id];
+  const r=await fetch(it.url,{cache:'no-store'});if(!r.ok)throw new Error('Không tải được file ('+r.status+')');
+  const b=await r.arrayBuffer();X.bytes[it.id]=b;return b}
+async function build(){
+  const it=cur();if(!it)throw new Error('Chưa chọn file');
+  if(!window.PDFLib)throw new Error('Chưa tải được thư viện PDF, kiểm tra mạng');
+  const paper=$('#pfPaper').value,copies=Math.max(1,Math.min(99,parseInt($('#pfCopies').value,10)||1));
+  const buf=await getBytes(it);
+  if(paper==='orig'&&copies===1)return new Blob([buf],{type:'application/pdf'});
+  const {PDFDocument}=PDFLib;
+  const src=await PDFDocument.load(new Uint8Array(buf),{ignoreEncryption:true});
+  const out=await PDFDocument.create();
+  const emb=await out.embedPages(src.getPages());
+  for(let c=0;c<copies;c++)for(const ep of emb){
+    const w=ep.width,h=ep.height;
+    if(paper==='orig'){out.addPage([w,h]).drawPage(ep,{x:0,y:0,width:w,height:h});continue}
+    let [pw,ph]=PT[paper];if(w>h)[pw,ph]=[ph,pw];
+    const k=Math.min(pw/w,ph/h),dw=w*k,dh=h*k;
+    out.addPage([pw,ph]).drawPage(ep,{x:(pw-dw)/2,y:(ph-dh)/2,width:dw,height:dh})}
+  return new Blob([await out.save()],{type:'application/pdf'})}
+async function run(kind){
+  if(X.busy)return;const it=cur();if(!it)return toast('Chọn file PDF trước');
+  X.busy=true;document.querySelectorAll('#pfBtns .btn').forEach(b=>b.disabled=true);msg('Đang xử lý...');
+  try{
+    const blob=await build(),name=it.name+(($('#pfPaper').value==='orig')?'':'_'+$('#pfPaper').value)+'.pdf',url=URL.createObjectURL(blob);
+    if(kind==='dl')download(blob,name);
+    else if(kind==='view'){if(!window.open(url,'_blank'))download(blob,name)}
+    else if(kind==='share'){const f=new File([blob],name,{type:'application/pdf'});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name})}catch(e){if(e.name!=='AbortError')toast('Không chia sẻ được: '+e.message)}}
+      else{download(blob,name);toast('Máy này không chia sẻ trực tiếp được. Đã tải PDF, hãy gửi file qua LINE/Zalo.',4500)}}
+    else if(kind==='print'){
+      if(isAndroid){download(blob,name);toast('Đã tải PDF. Mở file vừa tải → chọn In (máy in Wi-Fi).',5000)}
+      else if(isIOS){if(!window.open(url,'_blank'))download(blob,name);toast('Trong trang PDF bấm Chia sẻ → In',4000)}
+      else{const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0';f.src=url;document.body.appendChild(f);
+        f.onload=()=>{setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){window.open(url,'_blank')}},300)};setTimeout(()=>f.remove(),120000)}}
+    setTimeout(()=>URL.revokeObjectURL(url),120000);
+    msg('✅ Xong. PDF được co/giãn vừa khổ giấy, giữ tỉ lệ, tự xoay ngang/dọc theo từng trang.')}
+  catch(e){console.error(e);msg('Lỗi: '+e.message);toast('Lỗi: '+e.message,4000)}
+  X.busy=false;document.querySelectorAll('#pfBtns .btn').forEach(b=>b.disabled=false)}
+$('#pfAdd').onclick=()=>$('#pfFile').click();
+$('#pfFile').onchange=async e=>{
+  const files=[...e.target.files];e.target.value='';if(!files.length)return;await ensureDb();let n=0;
+  for(const f of files){
+    try{const buf=await f.arrayBuffer();let pages=0;
+      try{pages=(await PDFLib.PDFDocument.load(new Uint8Array(buf),{ignoreEncryption:true})).getPageCount()}catch(_){}
+      const id='l'+Date.now()+'_'+n++;X.local.push({id,name:f.name.replace(/\.pdf$/i,''),size:f.size,pages,data:buf});X.sel=id}
+    catch(err){toast('Không đọc được '+f.name,3500)}}
+  if(!(await IDB.set('fixedPdfs',X.local)))toast('Chưa lưu được vào máy này (hết dung lượng?)',4000);
+  render()};
+$('#pfList').addEventListener('click',async e=>{
+  const d=e.target.closest('[data-del]');
+  if(d){const it=X.local.find(i=>i.id===d.dataset.del);if(it&&confirm('Xóa file "'+it.name+'" khỏi máy này?')){X.local=X.local.filter(i=>i!==it);if(X.sel===it.id)X.sel=null;await IDB.set('fixedPdfs',X.local);render()}return}
+  const r=e.target.closest('[data-id]');if(!r)return;X.sel=r.dataset.id;render();
+  const it=cur();if(it&&it.web&&!it.pages){try{const b=await getBytes(it);it.size=b.byteLength;it.pages=(await PDFLib.PDFDocument.load(new Uint8Array(b),{ignoreEncryption:true})).getPageCount();render()}catch(_){}}});
+$('#pfPaper').value=LS.get('pfPaper','A4');if(!$('#pfPaper').value)$('#pfPaper').value='A4';
+$('#pfPaper').onchange=()=>LS.set('pfPaper',$('#pfPaper').value);
+$('#pfPrint').onclick=()=>run('print');$('#pfView').onclick=()=>run('view');$('#pfDl').onclick=()=>run('dl');$('#pfShare').onclick=()=>run('share');
+const _sv=setView;
+setView=function(v){_sv(v);$('#vPdf').classList.toggle('on',v==='pdf');const b=$('#btnPdf');b.classList.toggle('on',v==='pdf');b.innerHTML=v==='pdf'?'←<span class="ht"> In sticker</span>':'📄<span class="ht"> PDF</span>';if(v==='pdf')load()};
+$('#btnPdf').onclick=()=>setView(curView==='pdf'?'staff':'pdf');
+})();
 </script>
 </body>
 </html>
